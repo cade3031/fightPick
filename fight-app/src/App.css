@@ -1,0 +1,17 @@
+.App {
+  text-align: center;
+}
+
+.Navbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background-color: #333;
+  color: white;
+  padding: 1rem;
+}
+.Navbar a {
+  color: white;
+  text-decoration: none;
+  margin-right: 1rem;
+}

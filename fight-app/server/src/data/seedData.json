@@ -1,0 +1,409 @@
+{
+    "men": [
+      {
+        "name": " Mens Heavyweight",
+        "fighters": [
+          {
+            "id": "m-heavyweight-champion",
+            "name": "Champion Jon Jones",
+            "nickname": "Bones",
+            "record": "27-1-0[W-L-D]",
+            "height": "6'4",
+            "weight": "250 lbs",
+            "fightingStyle": "MMA",
+            "ko": "10 wins",
+            "sub": "10 wins",
+            "dec": "7 wins"
+          },
+          {
+            "id": "m-heavyweight-1",
+            "name": "1 Tom Aspinall",
+            "nickname": "The Storm",
+            "record": "15-3-0[W-L-D]",
+            "height": "6'5",
+            "weight": "251 lbs",
+            "fightingStyle": "MMA",
+            "ko": "12 wins",
+            "sub": "3 wins",
+            "dec": "0 wins",
+            "1stRndFinsh": "14"
+          },
+          {
+            "id": "m-heavyweight-2",
+            "name": "2 Ciryl Gane",
+            "nickname": "Bon Gamin",
+            "record": "12-2-0[W-L-D]",
+            "height": "6'4",
+            "weight": "250 lbs",
+            "fightingStyle": "MMA",
+            "ko": "6 wins",
+            "sub": "3 wins",
+            "dec": "3 wins",
+            "1stRndFinsh": "3"
+          },
+          {
+            "id": "m-heavyweight-3",
+            "name": "3 Alxander Volkov",
+            "nickname": "Drago",
+            "record": "38-10-0[W-L-D]",
+            "height": "6'7",
+            "weight": "263 lbs",
+            "fightingStyle": "MMA",
+            "ko": "24 wins",
+            "sub": "3 wins",
+            "dec": "11 wins",
+            "1stRndFinsh": "17"
+          },
+          {
+            "id": "m-heavyweight-4",
+            "name": "4 Sergei Pavlovich",
+            "nickname": "The Russian Hammer",
+            "record": "18-3-0[W-L-D]",
+            "height": "6'3",
+            "weight": "260 lbs",
+            "fightingStyle": "MMA",
+            "ko": "15 wins",
+            "sub": "0 wins",
+            "dec": "3 wins",
+            "1stRndFinsh": "15"
+          },
+          {
+            "id": "m-heavyweight-5",
+            "name": "5 Curtis Blaydes",
+            "nickname": "The Crusher",
+            "record": "18-5-0[W-L-D]",
+            "height": "6'6",
+            "weight": "250 lbs",
+            "fightingStyle": "MMA",
+            "ko": "10 wins",
+            "sub": "5 wins",
+            "dec": "3 wins",
+            "1stRndFinsh": "3"
+          },
+          {
+            "id": "m-heavyweight-6",
+            "name": "6 Jailton Almeida",
+            "nickname": "The Brazilian Bomber",
+            "record": "21-3-0[W-L-D]",
+            "height": "6'4",
+            "weight": "241 lbs",
+            "fightingStyle": "MMA",
+            "ko": "7 wins",
+            "sub": "13 wins",
+            "dec": "1 wins",
+            "1stRndFinsh": "15"
+          },
+          {
+            "id": "m-heavyweight-7",
+            "name": "7 Serghei Spivac",
+            "nickname": "Polar Bear",
+            "record": "17-4-0[W-L-D]",
+            "height": "6'3",
+            "weight": "238 lbs",
+            "fightingStyle": "MMA",
+            "ko": "7 wins",
+            "sub": "8 wins",
+            "dec": "2 wins",
+            "1stRndFinsh": "11 wins"
+          },
+          {
+            "id": "m-heavyweight-8",
+            "name": "8 Stipe Miocic",
+            "record": "20-4-0[W-L-D]",
+            "height": "6'4",
+            "weight": "240 lbs",
+            "fightingStyle": "MMA",
+            "ko": "15 wins",
+            "sub": "0 wins",
+            "dec": "5 wins",
+            "title": "3 title defenses"
+          },
+          {
+            "id": "m-heavyweight-9",
+            "name": "9 Marcin Tybura",
+            "nickname": "Tybur",
+            "record": "25-9-0[W-L-D]",
+            "height": "6'3",
+            "weight": "252 lbs",
+            "fightingStyle": "MMA",
+            "ko": "9 wins",
+            "sub": "7 wins",
+            "dec": "9 wins",
+            "1stRndFinsh": "11"
+          },
+          {
+            "id": "m-heavyweight-10",
+            "name": "10 Jairzinho Rozenstruik",
+            "nickname": "Bigi Boy",
+            "record": "15-5-0[W-L-D]",
+            "height": "6'2",
+            "weight": "265 lbs",
+            "fightingStyle": "Kickboxer",
+            "ko": "13 wins",
+            "sub": "0 wins",
+            "dec": "2 wins",
+            "1stRndFinsh": "9"
+          },
+          {
+            "id": "m-heavyweight-11",
+            "name": "11 Derrick Lewis",
+            "nickname": "The Black Beast",
+            "record": "28-12-0[W-L-D]",
+            "height": "6'3",
+            "weight": "264 lbs",
+            "fightingStyle": "Striker",
+            "ko": "23 wins",
+            "sub": "0 wins",
+            "dec": "5 wins",
+            "1stRndFinsh": "9 wins"
+          },
+          {
+            "id": "m-heavyweight-12",
+            "name": "12 Tai Tuivasa",
+            "nickname": "Bam Bam",
+            "record": "15-8-0[W-L-D]",
+            "height": "6'2",
+            "weight": "266 lbs",
+            "fightingStyle": "Striker",
+            "ko": "14 wins",
+            "sub": "0 wins",
+            "dec": "1 wins",
+            "1stRndFinsh": "12 wins"
+          },
+          {
+            "id": "m-heavyweight-13",
+            "name": "13 Alexander Romanov",
+            "nickname": "King Kong",
+            "record": "17-3-0[W-L-D]",
+            "height": "6'2",
+            "weight": "265 lbs",
+            "fightingStyle": "MMA",
+            "ko": "6 wins",
+            "sub": "9 wins",
+            "dec": "2 wins",
+            "1stRndFinsh": "11 wins"
+          },
+          {
+            "id": "m-heavyweight-14",
+            "name": "14 Marcos Rogério de Lima",
+            "nickname": "Peazo",
+            "record": "22-10-1[W-L-D]",
+            "height": "6'1",
+            "weight": "262 lbs",
+            "fightingStyle": "Boxing, BJJ",
+            "ko": "15 wins",
+            "sub": "3 wins",
+            "dec": "4 wins",
+            "1stRndFinsh": "15 wins"
+          },
+          {
+            "id": "m-heavyweight-15",
+            "name": "15 Rodrigo Nascimento",
+            "nickname": "Ze Colmeia",
+            "record": "11-2-0[W-L-D]",
+            "height": "6'3",
+            "weight": "260 lbs",
+            "fightingStyle": "Grappler",
+            "ko": "2 wins",
+            "sub": "6 wins",
+            "dec": "3 wins",
+            "1stRndFinsh": "6 wins"
+          }
+        ]
+      },
+      {
+        "name": "Light Heavyweight",
+        "fighters": [
+          {
+            "id": "m-light-heavyweight-champion",
+            "name": "Champion Alex Pereira",
+            "nickname": "Poatan",
+            "record": "12-2-0[W-L-D]",
+            "height": "6'4",
+            "weight": "2 lbs",
+            "fightingStyle": "Kickboxer",
+            "ko": "10 wins",
+            "sub": "0 wins",
+            "dec": "2 wins",
+            "1stRndFinsh": "4 wins"
+          },
+          {
+            "id": "m-light-heavyweight-1",
+            "name": "1 Jiri Prochazka",
+            "record": "30-5-1[W-L-D]",
+            "height": "6'3",
+            "weight": "205 lbs",
+            "fightingStyle": "Striking, Grappler",
+            "ko": "26 wins",
+            "sub": "3 wins",
+            "dec": "1 wins",
+            "1stRndFinsh": "23 wins"
+          }
+        ]
+      },
+      {
+        "name": "Middleweight",
+        "fighters": [
+          {
+            "id": "m-middleweight-champion",
+            "name": "Champion Israel Adesanya",
+            "nickname": "The Last Stylebender",
+            "record": "23-4-0[W-L-D]",
+            "height": "6'4",
+            "weight": "185 lbs",
+            "fightingStyle": "MMA",
+            "ko": "18 wins",
+            "sub": "3 wins",
+            "dec": "2 wins",
+            "1stRndFinsh": "11 wins"
+          }
+        ]
+      },
+      {
+        "name": "Welterweight",
+        "fighters": [
+          {
+            "id": "m-welterweight-champion",
+            "name": "Champion Kamaru Usman",
+            "nickname": "The Nigerian Nightmare",
+            "record": "20-1-0[W-L-D]",
+            "height": "6'2",
+            "weight": "170 lbs",
+            "fightingStyle": "MMA",
+            "ko": "14 wins",
+            "sub": "3 wins",
+            "dec": "3 wins",
+            "1stRndFinsh": "11 wins"
+          }
+        ]
+      },
+      {
+        "name": "Lightweight",
+        "fighters": [
+          {
+            "id": "m-lightweight-champion",
+            "name": "Champion Islam Makhachev",
+            "nickname": "The Eagle",
+            "record": "22-1-0[W-L-D]",
+            "height": "6'2",
+            "weight": "155 lbs",
+            "fightingStyle": "MMA",
+            "ko": "18 wins",
+            "sub": "2 wins",
+            "dec": "2 wins",
+            "1stRndFinsh": "11 wins"
+          }
+        ]
+      },
+      {
+        "name": "Featherweight",
+        "fighters": [
+          {
+            "id": "m-featherweight-champion",
+            "name": "Champion Max Holloway",
+            "nickname": "Blessed",
+            "record": "23-7-0[W-L-D]",
+            "height": "6'0",
+            "weight": "145 lbs",
+            "fightingStyle": "MMA",
+            "ko": "15 wins",
+            "sub": "3 wins",
+            "dec": "5 wins",
+            "1stRndFinsh": "11 wins"
+          }
+        ]
+      },
+      {
+        "name": "Bantamweight",
+        "fighters": [
+          {
+            "id": "m-bantamweight-champion",
+            "name": "Champion T.J. Dillashaw",
+            "nickname": "The Devastator",
+            "record": "21-5-0[W-L-D]",
+            "height": "6'0",
+            "weight": "135 lbs",
+            "fightingStyle": "MMA",
+            "ko": "10 wins",
+            "sub": "3 wins",
+            "dec": "8 wins",
+            "1stRndFinsh": "11 wins"
+          }
+        ]
+      },
+      {
+        "name": "Flyweight",
+        "fighters": [
+          {
+            "id": "m-flyweight-champion",
+            "name": "Champion Deiveson Figueiredo",
+            "nickname": "The Venezuelan Viper",
+            "record": "21-5-0[W-L-D]",
+            "height": "6'0",
+            "weight": "125 lbs",
+            "fightingStyle": "MMA",
+            "ko": "10 wins",
+            "sub": "3 wins",
+            "dec": "8 wins",
+            "1stRndFinsh": "11 wins"
+          }
+        ]
+      }
+    ],
+    "women": [
+      {
+        "name": "Women's Strawweight",
+        "fighters": [
+          {
+            "id": "w-strawweight-champion",
+            "name": " Champion Zhang Weili",
+            "nickname": "The Lioness",
+            "record": "25-3-0[W-L-D]",
+            "height": "5'7",
+            "weight": "115 lbs",
+            "fightingStyle": "MMA",
+            "ko": "11 wins",
+            "sub": "8 wins",
+            "dec": "6 wins",
+            "1stRndFinsh": "11 wins"
+          }
+        ]
+      },
+      {
+        "name": "Women's Flyweight",
+        "fighters": [
+          {
+            "id": "w-flyweight-champion",
+            "name": "Champion Valentina Shevchenko",
+            "nickname": "The Bullet",
+            "record": "23-3-0[W-L-D]",
+            "height": "5'7",
+            "weight": "125 lbs",
+            "fightingStyle": "MMA",
+            "ko": "11 wins",
+            "sub": "8 wins",
+            "dec": "4 wins",
+            "1stRndFinsh": "11 wins"
+          }
+        ]
+      },
+      {
+        "name": "Women's Bantamweight",
+        "fighters": [
+          {
+            "id": "w-bantamweight-champion",
+            "name": "Champion Amanda Nunes",
+            "nickname": "The Lioness",
+            "record": "23-3-0[W-L-D]",
+            "height": "5'7",
+            "weight": "125 lbs",
+            "fightingStyle": "MMA",
+            "ko": "11 wins",
+            "sub": "8 wins",
+            "dec": "4 wins",
+            "1stRndFinsh": "11 wins"  
+          }
+        ]
+      }
+    ]
+}

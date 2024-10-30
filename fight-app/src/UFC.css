@@ -1,0 +1,274 @@
+/* Base layout */
+#fight-card-data {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    padding: 20px;
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+/* Header */
+.fight-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background-color: #1a1a1a;
+    color: white;
+    padding: 15px 20px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+}
+
+/* Fight Card */
+.fight-card {
+    background-color: white;
+    border-radius: 10px;
+    padding: 20px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    cursor: pointer;
+    transition: transform 0.2s ease;
+}
+
+.fight-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+}
+
+/* Fighter Info */
+.fighter-container {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 15px;
+    padding: 10px;
+}
+
+.fighter-info {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.fighter-name {
+    font-size: 1.2rem;
+    font-weight: bold;
+    color: #2d3748;
+}
+
+.odds {
+    font-weight: bold;
+    color: #4a5568;
+}
+
+/* Prediction Container */
+.prediction-container {
+    margin-top: 20px;
+    padding: 20px;
+    background-color: #f7fafc;
+    border-radius: 8px;
+    border: 1px solid #e2e8f0;
+    position: relative;
+}
+
+/* AI Analysis */
+.ai-analysis {
+    background-color: #ebf8ff;
+    padding: 15px;
+    border-radius: 8px;
+    margin: 15px 0;
+}
+
+.ai-analysis h4 {
+    color: #2c5282;
+    margin-bottom: 10px;
+}
+
+/* Simulation Results */
+.simulation-results {
+    background-color: #f0fff4;
+    padding: 15px;
+    border-radius: 8px;
+    margin: 15px 0;
+}
+
+.prediction-details {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 20px;
+    margin: 15px 0;
+}
+
+.fighter-prediction {
+    background-color: white;
+    padding: 15px;
+    border-radius: 8px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+/* Progress Bar */
+.simulation-progress {
+    margin: 15px 0;
+}
+
+.progress-bar {
+    width: 100%;
+    height: 20px;
+    background-color: #edf2f7;
+    border-radius: 10px;
+    overflow: hidden;
+}
+
+.progress-fill {
+    height: 100%;
+    background-color: #4299e1;
+    transition: width 0.3s ease;
+}
+
+/* Betting Advice */
+.betting-advice {
+    background-color: #f0fff4;
+    padding: 15px;
+    border-radius: 8px;
+    margin-top: 15px;
+}
+
+.suggested-bet {
+    text-align: center;
+    font-weight: bold;
+    color: #2f855a;
+    margin-top: 10px;
+}
+
+/* Test Button */
+.test-button {
+    background-color: #4a5568;
+    color: white;
+    padding: 8px 16px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: background-color 0.2s;
+}
+
+.test-button:hover {
+    background-color: #2d3748;
+}
+
+/* Loading State */
+.loading-spinner {
+    text-align: center;
+    padding: 20px;
+    color: #4a5568;
+    font-style: italic;
+}
+
+/* Add to your existing UFC.css */
+
+.popup-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.7);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+}
+
+.popup-content {
+    background-color: white;
+    padding: 30px;
+    border-radius: 10px;
+    max-width: 600px;
+    width: 90%;
+    max-height: 80vh;
+    overflow-y: auto;
+    position: relative;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.ollama-response {
+    margin: 20px 0;
+    padding: 15px;
+    background-color: #f8f9fa;
+    border-radius: 8px;
+    line-height: 1.6;
+    white-space: pre-wrap;
+    font-size: 1.1rem;
+}
+
+.close-popup {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    background-color: #e53e3e;
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: background-color 0.2s;
+}
+
+.close-popup:hover {
+    background-color: #c53030;
+}
+
+/* Animation for popup */
+.popup-content {
+    animation: popIn 0.3s ease-out;
+}
+
+@keyframes popIn {
+    from {
+        transform: scale(0.8);
+        opacity: 0;
+    }
+    to {
+        transform: scale(1);
+        opacity: 1;
+    }
+}
+.hide-ai-analysis {
+    margin: 2px;
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    color: black;
+    border: none;
+    font-size: 1.5rem;
+    background-color: none;
+    font-weight: bold;
+    cursor: pointer;
+    margin-top: 155px;
+    margin-right: 20px;
+    padding: 2px;
+
+}
+.hide-ai-analysis:hover {
+    background-color: #c53030;
+}
+.fight-card.analyzed {
+    background-color: #333;
+    font-style: italic;
+}
+.analyzed .odds {
+    color: #ff0000;
+}
+.analyzed .fighter-name {
+    color: white;
+}
+.analyzed .opponent {
+    color: white;
+}
+.close-prediction {
+    border: 1px solid black;
+    font-size: large;
+}
+.close-prediction:hover {
+    background-color: #c53030;
+}
