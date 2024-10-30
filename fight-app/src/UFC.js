@@ -125,10 +125,9 @@ function UFC() {
   };
 
   const handleFightClick = (event, competitors) => {
-
-      if (!handleAnalyzeFight(event, competitors)) {
-        return;
-      }
+    if (!handleAnalyzeFight(event, competitors)) {
+      return;
+    }
 
     const fighter1 = {
       name: competitors[0].name,
@@ -160,8 +159,6 @@ function UFC() {
     
     setSelectedFight({ fighter1, fighter2 });
     getPrediction(fighter1, fighter2);
-    handleAnalyzeFight(event, fighter1.name); // calls the handleAnalyze fight function into the useEffect 
-
   };
 
   const handleAnalyzeFight = (event, name) => {
@@ -302,10 +299,7 @@ function UFC() {
             <div className="ollama-response">
               {ollamaResponse}
             </div>
-            <button 
-              className="close-popup" 
-              onClick={() => setShowPopup(false)}
-            >
+            <button className="close-popup" onClick={() => setShowPopup(false)}>
               Close
             </button>
           </div>
