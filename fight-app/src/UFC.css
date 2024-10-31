@@ -192,12 +192,44 @@
 
 .ollama-response {
     margin: 20px 0;
-    padding: 15px;
-    background-color: #f8f9fa;
+    padding: 20px;
+    background-color: #1a1a1a;
+    color: #00ff00;
     border-radius: 8px;
-    line-height: 1.6;
+    line-height: 1.8;
     white-space: pre-wrap;
-    font-size: 1.1rem;
+    font-family: 'Courier New', monospace;
+    font-size: 1rem;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    border: 1px solid #333;
+}
+
+.ollama-response h3 {
+    color: #4299e1;
+    border-bottom: 1px solid #333;
+    padding-bottom: 10px;
+    margin-bottom: 15px;
+}
+
+.ollama-response strong {
+    color: #f6ad55;
+}
+
+.ollama-response span.percentage {
+    color: #68d391;
+}
+
+.ollama-response:hover {
+    box-shadow: 0 6px 8px rgba(0, 0, 0, 0.2);
+    transform: translateY(-2px);
+    transition: all 0.2s ease;
+}
+
+.ollama-response section {
+    margin: 15px 0;
+    padding: 10px;
+    border-left: 3px solid #4299e1;
+    background-color: #222;
 }
 
 .close-popup {
@@ -425,4 +457,101 @@
 .popup-content::-webkit-scrollbar-thumb {
   background-color: #cbd5e0;
   border-radius: 4px;
+}
+
+/* Add these styles for the Monte Carlo section */
+.monte-carlo-results {
+  background-color: #1a1a1a;
+  padding: 25px;
+  border-radius: 8px;
+  margin: 20px 0;
+  color: #fff;  /* Changed from matrix green to white for better readability */
+}
+
+.monte-carlo-results h2 {
+  color: #4299e1;
+  font-size: 1.5rem;
+  margin-bottom: 25px;
+  text-align: center;
+}
+
+/* Fighter comparison cards */
+.fighter-stats {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 30px;
+  margin: 20px 0;
+}
+
+.fighter-stats > div {
+  background-color: #222;
+  padding: 20px;
+  border-radius: 8px;
+  border-left: 4px solid #4299e1;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+/* Probability styling */
+.win-probability {
+  font-size: 1.4rem;
+  color: #68d391;  /* Light green */
+  margin: 15px 0;
+  text-align: center;
+  font-weight: bold;
+}
+
+/* Kelly Criterion and Expected Value */
+.kelly-criterion, .expected-value {
+  font-size: 1.1rem;
+  margin: 10px 0;
+  text-align: center;
+}
+
+.kelly-criterion {
+  color: #f6ad55;  /* Orange */
+}
+
+.expected-value {
+  color: #fc8181;  /* Red */
+}
+
+/* Simulation Confidence */
+.simulation-confidence {
+  background-color: #2d3748;
+  padding: 15px;
+  border-radius: 8px;
+  margin: 20px 0;
+  text-align: center;
+  color: #4299e1;
+  font-size: 1.2rem;
+  font-weight: bold;
+}
+
+/* Betting Recommendation section */
+.betting-recommendation {
+  background-color: #1a1a1a;
+  padding: 25px;
+  border-radius: 8px;
+  margin-top: 25px;
+  text-align: center;
+}
+
+.suggested-bet {
+  color: #68d391;
+  font-size: 1.5rem;
+  font-weight: bold;
+  margin: 15px 0;
+}
+
+.recommended-size {
+  color: #f6ad55;
+  font-size: 1.2rem;
+  margin-top: 10px;
+}
+
+/* Add hover effects */
+.fighter-stats > div:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
+  transition: all 0.2s ease;
 }
