@@ -193,15 +193,17 @@
 .ollama-response {
     margin: 20px 0;
     padding: 20px;
-    background-color: #1a1a1a;
+    background-color: #000000;
     color: #00ff00;
     border-radius: 8px;
     line-height: 1.8;
     white-space: pre-wrap;
     font-family: 'Courier New', monospace;
     font-size: 1rem;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-    border: 1px solid #333;
+    box-shadow: 0 0 10px rgba(0, 255, 0, 0.2);
+    border: 1px solid #00ff00;
+    position: relative;
+    overflow: hidden;
 }
 
 .ollama-response h3 {
@@ -212,7 +214,8 @@
 }
 
 .ollama-response strong {
-    color: #f6ad55;
+    color: #00ff00;
+    text-shadow: 0 0 5px rgba(0, 255, 0, 0.5);
 }
 
 .ollama-response span.percentage {
@@ -220,16 +223,16 @@
 }
 
 .ollama-response:hover {
-    box-shadow: 0 6px 8px rgba(0, 0, 0, 0.2);
-    transform: translateY(-2px);
-    transition: all 0.2s ease;
+    text-shadow: 0 0 5px rgba(0, 255, 0, 0.5);
+    box-shadow: 0 0 15px rgba(0, 255, 0, 0.3);
+    transition: all 0.3s ease;
 }
 
 .ollama-response section {
-    margin: 15px 0;
-    padding: 10px;
-    border-left: 3px solid #4299e1;
-    background-color: #222;
+    border-left: 2px solid #00ff00;
+    margin: 10px 0;
+    padding-left: 10px;
+    background-color: rgba(0, 255, 0, 0.05);
 }
 
 .close-popup {
@@ -554,4 +557,51 @@
   transform: translateY(-2px);
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
   transition: all 0.2s ease;
+}
+
+/* Add matrix rain effect */
+.ollama-response::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(
+        180deg,
+        rgba(0, 255, 0, 0.1) 0%,
+        rgba(0, 255, 0, 0.05) 50%,
+        transparent 100%
+    );
+    animation: matrixRain 2s linear infinite;
+    pointer-events: none;
+}
+
+@keyframes matrixRain {
+    0% {
+        transform: translateY(-100%);
+    }
+    100% {
+        transform: translateY(100%);
+    }
+}
+
+/* Make text glow on hover */
+.ollama-response:hover {
+    text-shadow: 0 0 5px rgba(0, 255, 0, 0.5);
+    box-shadow: 0 0 15px rgba(0, 255, 0, 0.3);
+    transition: all 0.3s ease;
+}
+
+/* Style different sections */
+.ollama-response strong {
+    color: #00ff00;
+    text-shadow: 0 0 5px rgba(0, 255, 0, 0.5);
+}
+
+.ollama-response section {
+    border-left: 2px solid #00ff00;
+    margin: 10px 0;
+    padding-left: 10px;
+    background-color: rgba(0, 255, 0, 0.05);
 }
