@@ -180,11 +180,11 @@
 
 .popup-content {
     background-color: white;
-    padding: 30px;
-    border-radius: 10px;
-    max-width: 600px;
+    padding: 20px;
+    border-radius: 12px;
+    max-width: 800px;
     width: 90%;
-    max-height: 80vh;
+    max-height: 85vh;
     overflow-y: auto;
     position: relative;
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
@@ -311,4 +311,118 @@
 .fighter-input-section h4 {
   margin-bottom: 15px;
   color: #2d3748;
+}
+.form-group{
+    
+}
+
+/* Add these styles to your existing UFC.css */
+
+.fighters-comparison {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 15px;
+  margin-bottom: 15px;
+}
+
+.fighter-form {
+  background-color: #f8f9fa;
+  padding: 15px;
+  border-radius: 6px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+.fighter-form h4 {
+  color: #2d3748;
+  font-size: 1.2rem;
+  margin-bottom: 20px;
+  padding-bottom: 10px;
+  border-bottom: 2px solid #e2e8f0;
+}
+
+.form-group {
+  margin-bottom: 8px;
+  padding: 8px;
+  display: flex;
+  align-items: center;
+  background-color: white;
+  border-radius: 6px;
+  transition: all 0.2s ease;
+}
+
+.form-group:hover {
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.form-group label {
+  width: 120px;
+  color: #4a5568;
+  font-weight: 500;
+  font-size: 0.9rem;
+}
+
+.form-group input {
+  flex: 1;
+  padding: 6px 10px;
+  border: 1px solid #e2e8f0;
+  border-radius: 4px;
+  font-size: 0.9rem;
+  transition: all 0.2s ease;
+}
+
+.form-group input:focus {
+  outline: none;
+  border-color: #4299e1;
+  box-shadow: 0 0 0 3px rgba(66, 153, 225, 0.1);
+}
+
+.form-group input[type="number"] {
+  width: 80px;
+}
+
+.submit-fighter-data {
+  width: 100%;
+  padding: 10px;
+  background-color: #4299e1;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 1rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+  margin-top: 15px;
+}
+
+.submit-fighter-data:hover {
+  background-color: #3182ce;
+}
+
+.popup-content {
+  background-color: white;
+  padding: 30px;
+  border-radius: 12px;
+  max-width: 900px; /* Increased for two columns */
+  width: 95%;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+/* Add smooth scrollbar for the form */
+.popup-content {
+  scrollbar-width: thin;
+  scrollbar-color: #cbd5e0 #f8f9fa;
+}
+
+.popup-content::-webkit-scrollbar {
+  width: 8px;
+}
+
+.popup-content::-webkit-scrollbar-track {
+  background: #f8f9fa;
+}
+
+.popup-content::-webkit-scrollbar-thumb {
+  background-color: #cbd5e0;
+  border-radius: 4px;
 }
