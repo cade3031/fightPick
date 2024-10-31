@@ -66,41 +66,110 @@ const analyzeGrapplingAdvantage = (f1, f2) => {
   return "Even grappling match";
 };
 
+// Add this function after your other analysis functions
+const predictFightOutcome = (fighter1, fighter2) => {
+  try {
+    // Add default values and validation
+    const f1Wins = parseInt(fighter1.wins) || 0;
+    const f1KoWins = parseInt(fighter1.koWins) || 0;
+    const f1SubWins = parseInt(fighter1.subWins) || 0;
+    const f1DecisionWins = parseInt(fighter1.decisionWins) || 0;
+    
+    const f2Wins = parseInt(fighter2.wins) || 0;
+    const f2KoWins = parseInt(fighter2.koWins) || 0;
+    const f2SubWins = parseInt(fighter2.subWins) || 0;
+    const f2DecisionWins = parseInt(fighter2.decisionWins) || 0;
+
+    // Calculate rates with validation
+    const f1KoRate = f1Wins > 0 ? (f1KoWins / f1Wins) * 100 : 0;
+    const f1SubRate = f1Wins > 0 ? (f1SubWins / f1Wins) * 100 : 0;
+    const f1DecisionRate = f1Wins > 0 ? (f1DecisionWins / f1Wins) * 100 : 0;
+    
+    const f2KoRate = f2Wins > 0 ? (f2KoWins / f2Wins) * 100 : 0;
+    const f2SubRate = f2Wins > 0 ? (f2SubWins / f2Wins) * 100 : 0;
+    const f2DecisionRate = f2Wins > 0 ? (f2DecisionWins / f2Wins) * 100 : 0;
+
+    // Calculate combined probabilities with validation
+    const combinedKOProb = (f1KoRate + f2KoRate) / 2 || 0;
+    const combinedSubProb = (f1SubRate + f2SubRate) / 2 || 0;
+    const combinedDecisionProb = (f1DecisionRate + f2DecisionRate) / 2 || 0;
+    const combinedFinishRate = Math.min(100, (combinedKOProb + combinedSubProb)) || 0;
+
+    // Calculate win probabilities
+    const f1TotalRate = f1Wins > 0 ? 
+      ((f1KoWins + f1SubWins + f1DecisionWins) / f1Wins) * 100 : 0;
+    const f2TotalRate = f2Wins > 0 ? 
+      ((f2KoWins + f2SubWins + f2DecisionWins) / f2Wins) * 100 : 0;
+
+    let outcome = {
+      goesToDistance: combinedFinishRate < 65 ? "High" : "Low",
+      finishProbability: combinedFinishRate,
+      likelyMethod: null,
+      confidence: null,
+      recommendedBet: "",
+      winProbability: {
+        fighter1: f1TotalRate.toFixed(1),
+        fighter2: f2TotalRate.toFixed(1)
+      }
+    };
+
+    // Determine most likely finish method
+    if (combinedFinishRate > 65) {
+      outcome.likelyMethod = combinedKOProb > combinedSubProb ? "KO/TKO" : "Submission";
+      outcome.confidence = Math.min(Math.max(combinedFinishRate, 60), 90);
+    }
+
+    // Generate betting recommendation
+    if (combinedDecisionProb > 65) {
+      outcome.recommendedBet = "Fight goes to decision (Confident)";
+    } else if (combinedKOProb > 60) {
+      outcome.recommendedBet = "Fight doesn't go to decision - Look for KO/TKO (High Confidence)";
+    } else if (combinedSubProb > 60) {
+      outcome.recommendedBet = "Fight doesn't go to decision - Look for Submission (High Confidence)";
+    } else if ((combinedKOProb + combinedSubProb) > 70) {
+      outcome.recommendedBet = "Fight doesn't go to decision (Moderate Confidence)";
+    } else {
+      outcome.recommendedBet = "No strong lean on fight outcome method";
+    }
+
+    return {
+      prediction: outcome,
+      analysis: `Fight Outcome Analysis:\n` +
+                `Distance Probability: ${outcome.goesToDistance} (${(combinedDecisionProb).toFixed(1)}%)\n` +
+                `Finish Probability: ${combinedFinishRate.toFixed(1)}%\n` +
+                `${outcome.likelyMethod ? `Most Likely Method: ${outcome.likelyMethod} (${outcome.confidence.toFixed(1)}% confidence)\n` : ''}\n` +
+                `Safe Bet Recommendation: ${outcome.recommendedBet}\n` +
+                `Win Probability:\n` +
+                `${fighter1.name}: ${outcome.winProbability.fighter1}%\n` +
+                `${fighter2.name}: ${outcome.winProbability.fighter2}%`
+    };
+  } catch (error) {
+    console.error('Error in predictFightOutcome:', error);
+    return {
+      prediction: {
+        goesToDistance: "Unknown",
+        finishProbability: 0,
+        recommendedBet: "Insufficient data for prediction",
+        winProbability: {
+          fighter1: "0.0",
+          fighter2: "0.0"
+        }
+      },
+      analysis: 'Unable to predict fight outcome - insufficient data'
+    };
+  }
+};
+
 // Main prediction endpoint
 app.post("/api/predict", async (req, res) => {
   try {
     const { fighter1, fighter2 } = req.body;
     console.log("Server received fighter data:", {
-      fighter1: {
-        name: fighter1.name,
-        wins: fighter1.wins,
-        losses: fighter1.losses,
-        koWins: fighter1.koWins,
-        subWins: fighter1.subWins,
-        strikeAccuracy: fighter1.strikeAccuracy,
-        takedownAccuracy: fighter1.takedownAccuracy,
-        takedownDefense: fighter1.takedownDefense,
-        weight: fighter1.weight
-      },
-      fighter2: {
-        name: fighter2.name,
-        wins: fighter2.wins,
-        losses: fighter2.losses,
-        koWins: fighter2.koWins,
-        subWins: fighter2.subWins,
-        strikeAccuracy: fighter2.strikeAccuracy,
-        takedownAccuracy: fighter2.takedownAccuracy,
-        takedownDefense: fighter2.takedownDefense,
-        weight: fighter2.weight
-      }
+      fighter1,
+      fighter2
     });
 
-    // Add error checking for required fields
-    if (!fighter1.wins || !fighter2.wins) {
-      throw new Error('Missing required fighter statistics');
-    }
-
-    // Calculate all stats
+    // First calculate all basic stats
     const fighter1Style = analyzeFightingStyle(fighter1);
     const fighter2Style = analyzeFightingStyle(fighter2);
     const advantages = calculateAdvantages(fighter1, fighter2);
@@ -109,7 +178,10 @@ app.post("/api/predict", async (req, res) => {
     const fighter1GrapplingAdvantage = analyzeGrapplingAdvantage(fighter1, fighter2);
     const fighter2GrapplingAdvantage = analyzeGrapplingAdvantage(fighter2, fighter1);
 
-    // Create analysis string
+    // Calculate fight outcome BEFORE creating analysis string
+    const outcomeAnalysis = predictFightOutcome(fighter1, fighter2);
+
+    // Then create analysis string using all calculated data
     const analysis = `Fight Analysis: ${fighter1.name} vs ${fighter2.name}\n\n` +
       `Style Matchup:\n` +
       `${fighter1.name} (${fighter1Style}):\n` +
@@ -129,7 +201,14 @@ app.post("/api/predict", async (req, res) => {
       `- Takedown Accuracy: ${fighter2.takedownAccuracy}%\n` +
       `- Takedown Defense: ${fighter2.takedownDefense}%\n` +
       `- Win Rate: ${fighter2Stats.winRate.toFixed(1)}%\n` +
-      `- Grappling Analysis: ${fighter2GrapplingAdvantage}\n\n`;
+      `- Grappling Analysis: ${fighter2GrapplingAdvantage}\n\n` +
+      `${outcomeAnalysis.analysis}\n\n` +
+      `Fight Outcome Prediction:\n` +
+      `- Safe Bet Recommendation: ${outcomeAnalysis.prediction.recommendedBet}\n` +
+      `- Win Probability: ${fighter1.name}: ${fighter1Stats.winRate.toFixed(1)}% | ${fighter2.name}: ${fighter2Stats.winRate.toFixed(1)}%\n` +
+      `- Distance Probability: ${outcomeAnalysis.prediction.goesToDistance} (${(100 - outcomeAnalysis.prediction.finishProbability).toFixed(1)}%)\n` +
+      `- Finish Probability: ${outcomeAnalysis.prediction.finishProbability} (${outcomeAnalysis.prediction.finishProbability.toFixed(1)}%)\n` +
+      `${outcomeAnalysis.prediction.likelyMethod ? `- Most Likely Method: ${outcomeAnalysis.prediction.likelyMethod} (${outcomeAnalysis.prediction.confidence}% confidence)\n` : ''}`;
 
     res.json({
       message: analysis,
@@ -147,12 +226,16 @@ app.post("/api/predict", async (req, res) => {
           kellyBet: (fighter2Stats.winRate > fighter1Stats.winRate ? 2.5 : 1.5).toFixed(1),
           expectedValue: (fighter2Stats.winRate/100 - 0.5).toFixed(3)
         }
-      }
+      },
+      fightOutcome: outcomeAnalysis.prediction
     });
 
   } catch (error) {
     console.error('Error in prediction:', error);
-    res.status(500).json({ error: 'Failed to generate prediction' });
+    res.status(500).json({ 
+      error: 'Failed to generate prediction',
+      details: error.message 
+    });
   }
 });
 

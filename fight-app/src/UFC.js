@@ -315,6 +315,15 @@ function UFC() {
                           </div>
                         </div>
                       </div>
+                      <div className="safe-bet-analysis">
+                        <h4>Fight Outcome Analysis</h4>
+                        <p>Safe Bet: {prediction.fightOutcome?.recommendedBet}</p>
+                        <p>Distance Probability: {prediction.fightOutcome?.goesToDistance} ({(100 - prediction.fightOutcome?.finishProbability).toFixed(1)}%)</p>
+                        <p>Finish Probability: {prediction.fightOutcome?.finishProbability.toFixed(1)}%</p>
+                        {prediction.fightOutcome?.likelyMethod && (
+                          <p>Most Likely Method: {prediction.fightOutcome.likelyMethod} ({prediction.fightOutcome.confidence}% confidence)</p>
+                        )}
+                      </div>
                       <div className="simulation-confidence">
                         <p>Simulation Confidence: {prediction.simulationConfidence}%</p>
                       </div>
