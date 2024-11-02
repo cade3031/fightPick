@@ -1,6 +1,7 @@
 const express = require('express');
 const cors = require('cors');
 const app = express();
+const axios = require('axios');
 
 // Add middleware
 app.use(cors());
@@ -160,16 +161,98 @@ const predictFightOutcome = (fighter1, fighter2) => {
   }
 };
 
+// Add this constant
+const OLLAMA_URL = process.env.OLLAMA_URL || "http://localhost:11434";
+
+// Add this function to call Ollama
+const getOllamaAnalysis = async (fighter1, fighter2, stats) => {
+  try {
+    console.log("Starting Ollama analysis for:", {
+      fighter1: fighter1.name,
+      fighter2: fighter2.name
+    });
+
+    const prompt = `As a UFC fight analyst, analyze this matchup:
+
+    Fighter 1: ${fighter1.name}
+    Stats:
+    - Record: ${fighter1.wins}-${fighter1.losses}
+    - KO Rate: ${(fighter1.koWins/fighter1.wins * 100).toFixed(1)}%
+    - Submission Rate: ${(fighter1.subWins/fighter1.wins * 100).toFixed(1)}%
+    - Strike Accuracy: ${fighter1.strikeAccuracy}%
+    - Takedown Accuracy: ${fighter1.takedownAccuracy}%
+    - Takedown Defense: ${fighter1.takedownDefense}%
+    - Physical: Height ${fighter1.height}, Reach ${fighter1.reach}
+
+    Fighter 2: ${fighter2.name}
+    Stats:
+    - Record: ${fighter2.wins}-${fighter2.losses}
+    - KO Rate: ${(fighter2.koWins/fighter2.wins * 100).toFixed(1)}%
+    - Submission Rate: ${(fighter2.subWins/fighter2.wins * 100).toFixed(1)}%
+    - Strike Accuracy: ${fighter2.strikeAccuracy}%
+    - Takedown Accuracy: ${fighter2.takedownAccuracy}%
+    - Takedown Defense: ${fighter2.takedownDefense}%
+    - Physical: Height ${fighter2.height}, Reach ${fighter2.reach}
+
+    Additional Analysis:
+    ${stats}
+
+    Provide a detailed analysis including:
+    1. Who has the striking advantage and why
+    2. Who has the grappling advantage and why
+    3. Physical advantages and how they might be used
+    4. Most likely path to victory for each fighter
+    5. Prediction on fight outcome with confidence level
+    6. Betting recommendation based on the analysis
+
+    Format your response in clear sections.`;
+
+    console.log("Sending prompt to Ollama");
+    const response = await axios.post(`${OLLAMA_URL}/api/generate`, {
+      model: "llama2",
+      prompt: prompt,
+      stream: false,
+      temperature: 0.7
+    });
+
+    console.log("Received Ollama response:", response.data.response);
+    return response.data.response;
+  } catch (error) {
+    console.error('Ollama error:', error);
+    console.error('Error details:', {
+      message: error.message,
+      response: error.response?.data
+    });
+    return 'AI analysis unavailable - Error: ' + error.message;
+  }
+};
+
 // Main prediction endpoint
 app.post("/api/predict", async (req, res) => {
   try {
     const { fighter1, fighter2 } = req.body;
-    console.log("Server received fighter data:", {
-      fighter1,
-      fighter2
+    
+    // Add detailed logging
+    console.log("Processing fight analysis for:");
+    console.log("Fighter 1:", {
+      name: fighter1.name,
+      record: `${fighter1.wins}-${fighter1.losses}`,
+      koRate: (parseInt(fighter1.koWins) / parseInt(fighter1.wins) * 100).toFixed(1) + '%',
+      subRate: (parseInt(fighter1.subWins) / parseInt(fighter1.wins) * 100).toFixed(1) + '%'
+    });
+    console.log("Fighter 2:", {
+      name: fighter2.name,
+      record: `${fighter2.wins}-${fighter2.losses}`,
+      koRate: (parseInt(fighter2.koWins) / parseInt(fighter2.wins) * 100).toFixed(1) + '%',
+      subRate: (parseInt(fighter2.subWins) / parseInt(fighter2.wins) * 100).toFixed(1) + '%'
     });
 
-    // First calculate all basic stats
+    // Add data validation
+    if (!fighter1.wins || !fighter2.wins) {
+      throw new Error('Missing critical fighter statistics');
+    }
+
+    // Calculate all stats once
     const fighter1Style = analyzeFightingStyle(fighter1);
     const fighter2Style = analyzeFightingStyle(fighter2);
     const advantages = calculateAdvantages(fighter1, fighter2);
@@ -178,10 +261,10 @@ app.post("/api/predict", async (req, res) => {
     const fighter1GrapplingAdvantage = analyzeGrapplingAdvantage(fighter1, fighter2);
     const fighter2GrapplingAdvantage = analyzeGrapplingAdvantage(fighter2, fighter1);
 
-    // Calculate fight outcome BEFORE creating analysis string
+    // Calculate fight outcome
     const outcomeAnalysis = predictFightOutcome(fighter1, fighter2);
 
-    // Then create analysis string using all calculated data
+    // Create analysis string
     const analysis = `Fight Analysis: ${fighter1.name} vs ${fighter2.name}\n\n` +
       `Style Matchup:\n` +
       `${fighter1.name} (${fighter1Style}):\n` +
@@ -202,16 +285,25 @@ app.post("/api/predict", async (req, res) => {
       `- Takedown Defense: ${fighter2.takedownDefense}%\n` +
       `- Win Rate: ${fighter2Stats.winRate.toFixed(1)}%\n` +
       `- Grappling Analysis: ${fighter2GrapplingAdvantage}\n\n` +
-      `${outcomeAnalysis.analysis}\n\n` +
-      `Fight Outcome Prediction:\n` +
+      `Fight Outcome Analysis:\n` +
       `- Safe Bet Recommendation: ${outcomeAnalysis.prediction.recommendedBet}\n` +
       `- Win Probability: ${fighter1.name}: ${fighter1Stats.winRate.toFixed(1)}% | ${fighter2.name}: ${fighter2Stats.winRate.toFixed(1)}%\n` +
       `- Distance Probability: ${outcomeAnalysis.prediction.goesToDistance} (${(100 - outcomeAnalysis.prediction.finishProbability).toFixed(1)}%)\n` +
-      `- Finish Probability: ${outcomeAnalysis.prediction.finishProbability} (${outcomeAnalysis.prediction.finishProbability.toFixed(1)}%)\n` +
-      `${outcomeAnalysis.prediction.likelyMethod ? `- Most Likely Method: ${outcomeAnalysis.prediction.likelyMethod} (${outcomeAnalysis.prediction.confidence}% confidence)\n` : ''}`;
+      `- Finish Probability: ${outcomeAnalysis.prediction.finishProbability.toFixed(1)}%\n` +
+      `${outcomeAnalysis.prediction.likelyMethod ? `- Most Likely Method: ${outcomeAnalysis.prediction.likelyMethod} (${outcomeAnalysis.prediction.confidence.toFixed(1)}% confidence)` : ''}`;
 
+    // Get AI analysis from Ollama
+    const aiAnalysis = await getOllamaAnalysis(fighter1, fighter2, 
+      `Style Matchup: ${fighter1Style} vs ${fighter2Style}\n` +
+      `Physical Advantages: ${JSON.stringify(advantages)}\n` +
+      `Grappling Analysis: ${fighter1GrapplingAdvantage} vs ${fighter2GrapplingAdvantage}`
+    );
+
+    console.log("AI Analysis received:", aiAnalysis);
+
+    // Include AI analysis in response
     res.json({
-      message: analysis,
+      message: aiAnalysis,  // This will be the Ollama analysis
       aiAnalysis: true,
       fighter1Probability: fighter1Stats.winRate,
       fighter2Probability: fighter2Stats.winRate,

@@ -193,6 +193,7 @@ function UFC() {
       age: '',
       height: '',
       reach: '',
+      worldRanking: '',
       wins: '',
       losses: '',
       koWins: '',
@@ -200,6 +201,7 @@ function UFC() {
       strikeAccuracy: '',
       takedownAccuracy: '',
       takedownDefense: ''
+
     };
     
     const fighter2 = {
@@ -208,6 +210,7 @@ function UFC() {
       age: '',
       height: '',
       reach: '',
+      worldRanking: '',
       wins: '',
       losses: '',
       koWins: '',
@@ -315,13 +318,15 @@ function UFC() {
                           </div>
                         </div>
                       </div>
-                      <div className="safe-bet-analysis">
+                      <div className="safe-bet-analysis"> 
                         <h4>Fight Outcome Analysis</h4>
                         <p>Safe Bet: {prediction.fightOutcome?.recommendedBet}</p>
-                        <p>Distance Probability: {prediction.fightOutcome?.goesToDistance} ({(100 - prediction.fightOutcome?.finishProbability).toFixed(1)}%)</p>
-                        <p>Finish Probability: {prediction.fightOutcome?.finishProbability.toFixed(1)}%</p>
+                         
+                        <p>Distance Probability: {prediction.fightOutcome?.goesToDistance} ({(100 - prediction.fightOutcome?.finishProbability).toFixed(1)}%)</p>  
+                        {/* distance probability pulling from server */}
+                        <p>Finish Probability: {prediction.fightOutcome?.finishProbability.toFixed(1)}%</p> 
                         {prediction.fightOutcome?.likelyMethod && (
-                          <p>Most Likely Method: {prediction.fightOutcome.likelyMethod} ({prediction.fightOutcome.confidence}% confidence)</p>
+                       <p>Most Likely Method: {prediction.fightOutcome.likelyMethod} ({prediction.fightOutcome.confidence}% confidence)</p> 
                         )}
                       </div>
                       <div className="simulation-confidence">
@@ -404,6 +409,14 @@ function UFC() {
                           type="text" 
                           value={selectedFight.fighter1.reach}
                           onChange={(e) => handleInputChange(e, 'fighter1', 'reach')}
+                        />
+                      </div>
+                      <div className="form-group">
+                        <label>World Ranking:</label>
+                        <input 
+                          type="number" 
+                          value={selectedFight.fighter1.worldRanking}
+                          onChange={(e) => handleInputChange(e, 'fighter1', 'worldRanking')}
                         />
                       </div>
                       <div className="form-group">
@@ -504,6 +517,14 @@ function UFC() {
                           type="text" 
                           value={selectedFight.fighter2.reach}
                           onChange={(e) => handleInputChange(e, 'fighter2', 'reach')}
+                        />
+                      </div>
+                      <div className="form-group">
+                        <label>World Ranking:</label>
+                        <input 
+                          type="number" 
+                          value={selectedFight.fighter2.worldRanking}
+                          onChange={(e) => handleInputChange(e, 'fighter2', 'worldRanking')}
                         />
                       </div>
                       <div className="form-group">
