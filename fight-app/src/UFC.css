@@ -563,3 +563,34 @@
 .ollama-response::before {
     display: none;
 }
+
+/* Add these styles for the X button */
+.popup-close-button {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    background-color: #e53e3e;  /* Red background */
+    color: white;
+    border: none;
+    font-size: 18px;
+    font-weight: bold;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+    z-index: 1001;  /* Ensure it's above other content */
+}
+
+.popup-close-button:hover {
+    background-color: #c53030;  /* Darker red on hover */
+    transform: scale(1.1);
+}
+
+/* Update popup-content to accommodate the X button */
+.popup-content {
+    padding-top: 40px;  /* Add space for the X button */
+}

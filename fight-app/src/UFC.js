@@ -372,6 +372,12 @@ function UFC() {
       {showPopup && (
         <div className="popup-overlay">
           <div className="popup-content">
+            <button 
+              className="popup-close-button"
+              onClick={() => setShowPopup(false)}
+            >
+              ×
+            </button>
             {isInputMode ? ( 
               <>
                 <h3>Enter Fighter Data</h3>
