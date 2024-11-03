@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import weightClasses from './pages/WeightClass'; // Import the WeightClass data
 
 function Navbar() {
     const [showDropdown, setShowDropdown] = useState(false);
@@ -13,11 +12,6 @@ function Navbar() {
                 onMouseLeave={() => setShowDropdown(false)}
             >
                 <Link to="/UFC">UFC</Link>
-                {showDropdown && (
-                    <div className="dropdown">
-                        <Link to="/WeightClass">Weight Classes</Link>
-                    </div>
-                )}
             </div>
             <Link to="/Events">Events</Link>
             <Link to="/Football">Football</Link>

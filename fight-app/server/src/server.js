@@ -351,6 +351,41 @@ const saveFighterData = async (fighterData) => {
   }
 };
 
+// Add this endpoint
+app.post("/api/save-analysis", async (req, res) => {
+  const client = await pool.connect();
+  try {
+    const { fighters, prediction, fightOutcome, bettingAdvice } = req.body;
+    
+    const insertQuery = `
+      INSERT INTO fight_analyses (
+        fighter1_name, fighter2_name,
+        fighter1_stats, fighter2_stats,
+        prediction, betting_advice,
+        created_at
+      ) VALUES ($1, $2, $3, $4, $5, $6, NOW())
+      RETURNING id
+    `;
+    
+    const values = [
+      fighters.fighter1.name,
+      fighters.fighter2.name,
+      JSON.stringify(fighters.fighter1),
+      JSON.stringify(fighters.fighter2),
+      JSON.stringify(prediction),
+      JSON.stringify(bettingAdvice)
+    ];
+
+    const result = await client.query(insertQuery, values);
+    res.json({ success: true, id: result.rows[0].id });
+  } catch (error) {
+    console.error('Error saving analysis:', error);
+    res.status(500).json({ error: 'Failed to save analysis' });
+  } finally {
+    client.release();
+  }
+});
+
 // Main prediction endpoint
 app.post("/api/predict", async (req, res) => {
   try {

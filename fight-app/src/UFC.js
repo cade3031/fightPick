@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from 'react';
 import './UFC.css';
-import WeightClass from './pages/WeightClass';
 
 // Replace YOUR_TAILSCALE_IP with your actual Tailscale IP address
 const API_URL = 'http://localhost:8080';  // Make sure port matches your server
@@ -53,23 +52,31 @@ function UFC() {
       setPrediction(data);
       setOllamaResponse(data.message);
       
-      console.log('Storing fight analysis:', {
-        fighters: selectedFight,
-        prediction: data,
-        fightOutcome: data.fightOutcome,
-        bettingAdvice: data.bettingAdvice
-      });
-      
-      setAnalyzedFightsData(prev => {
-        const newData = [...prev, {
+      // Save to database
+      const saveResponse = await fetch(`${API_URL}/api/save-analysis`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
           fighters: selectedFight,
           prediction: data,
           fightOutcome: data.fightOutcome,
           bettingAdvice: data.bettingAdvice
-        }];
-        console.log('Updated analyzedFightsData:', newData);
-        return newData;
+        })
       });
+
+      if (!saveResponse.ok) {
+        console.error('Failed to save fight analysis');
+      }
+      
+      // Update local state
+      setAnalyzedFightsData(prev => [...prev, {
+        fighters: selectedFight,
+        prediction: data,
+        fightOutcome: data.fightOutcome,
+        bettingAdvice: data.bettingAdvice
+      }]);
       
       setIsInputMode(false);
     } catch (error) {
