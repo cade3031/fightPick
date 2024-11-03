@@ -272,6 +272,85 @@ const saveFightAnalysis = async (fightData) => {
   }
 };
 
+// Add this function to save/update fighter data
+const saveFighterData = async (fighterData) => {
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    
+    // Check if fighter exists
+    const checkQuery = `
+      SELECT id FROM fighters WHERE name = $1
+    `;
+    const existingFighter = await client.query(checkQuery, [fighterData.name]);
+    
+    if (existingFighter.rows.length > 0) {
+      // Update existing fighter
+      const updateQuery = `
+        UPDATE fighters SET
+          age = $1, height = $2, reach = $3,
+          world_ranking = $4, wins = $5, losses = $6,
+          ko_wins = $7, sub_wins = $8, decision_wins = $9,
+          strike_accuracy = $10, takedown_accuracy = $11,
+          takedown_defense = $12, last_updated = NOW()
+        WHERE name = $13
+        RETURNING id
+      `;
+      const values = [
+        fighterData.age,
+        fighterData.height,
+        fighterData.reach,
+        fighterData.worldRanking,
+        fighterData.wins,
+        fighterData.losses,
+        fighterData.koWins,
+        fighterData.subWins,
+        fighterData.decisionWins,
+        fighterData.strikeAccuracy,
+        fighterData.takedownAccuracy,
+        fighterData.takedownDefense,
+        fighterData.name
+      ];
+      const result = await client.query(updateQuery, values);
+      await client.query('COMMIT');
+      return result.rows[0].id;
+    } else {
+      // Insert new fighter
+      const insertQuery = `
+        INSERT INTO fighters (
+          name, age, height, reach, world_ranking,
+          wins, losses, ko_wins, sub_wins, decision_wins,
+          strike_accuracy, takedown_accuracy, takedown_defense
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+        RETURNING id
+      `;
+      const values = [
+        fighterData.name,
+        fighterData.age,
+        fighterData.height,
+        fighterData.reach,
+        fighterData.worldRanking,
+        fighterData.wins,
+        fighterData.losses,
+        fighterData.koWins,
+        fighterData.subWins,
+        fighterData.decisionWins,
+        fighterData.strikeAccuracy,
+        fighterData.takedownAccuracy,
+        fighterData.takedownDefense
+      ];
+      const result = await client.query(insertQuery, values);
+      await client.query('COMMIT');
+      return result.rows[0].id;
+    }
+  } catch (error) {
+    await client.query('ROLLBACK');
+    throw error;
+  } finally {
+    client.release();
+  }
+};
+
 // Main prediction endpoint
 app.post("/api/predict", async (req, res) => {
   try {
