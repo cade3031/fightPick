@@ -594,3 +594,109 @@
 .popup-content {
     padding-top: 40px;  /* Add space for the X button */
 }
+
+.parlay-container {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  z-index: 1000;
+}
+
+.parlay-button {
+  background-color: #4299e1;
+  color: white;
+  padding: 12px 24px;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 1rem;
+  font-weight: bold;
+  transition: all 0.2s ease;
+}
+
+.parlay-button:hover {
+  background-color: #3182ce;
+  transform: translateY(-2px);
+}
+
+.parlay-dropdown {
+  position: absolute;
+  bottom: 100%;
+  right: 0;
+  background-color: white;
+  border-radius: 8px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  margin-bottom: 10px;
+  overflow: hidden;
+}
+
+.parlay-dropdown button {
+  display: block;
+  width: 100%;
+  padding: 12px 24px;
+  border: none;
+  background: none;
+  cursor: pointer;
+  text-align: left;
+  transition: background-color 0.2s;
+}
+
+.parlay-dropdown button:hover {
+  background-color: #f7fafc;
+}
+
+.parlay-recommendation {
+  position: fixed;
+  bottom: 80px;
+  right: 20px;
+  background-color: #1a202c;
+  padding: 20px;
+  border-radius: 8px;
+  max-width: 400px;
+  color: white;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  z-index: 999;
+}
+
+.parlay-bet {
+  background-color: #2d3748;
+  padding: 15px;
+  margin: 10px 0;
+  border-radius: 6px;
+  border-left: 3px solid #4299e1;
+}
+
+.parlay-bet .bet-fighter {
+  color: #4299e1;
+  font-weight: bold;
+  font-size: 1.1rem;
+  margin-bottom: 5px;
+}
+
+.parlay-bet .bet-method {
+  color: #68d391;
+  font-weight: bold;
+  margin-bottom: 5px;
+}
+
+.parlay-bet .bet-type {
+  color: #a0aec0;
+  font-size: 0.9rem;
+  margin-bottom: 5px;
+}
+
+.parlay-bet .bet-confidence {
+  color: #f6ad55;
+}
+
+.parlay-stats {
+  margin-top: 15px;
+  padding-top: 15px;
+  border-top: 1px solid #4a5568;
+}
+
+.parlay-advice {
+  color: #68d391;
+  font-weight: bold;
+  margin-top: 10px;
+}

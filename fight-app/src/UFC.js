@@ -19,8 +19,11 @@ function UFC() {
   const [ollamaResponse, setOllamaResponse] = useState('');
   const [analyzedFights, setAnalyzedFights] = useState(new Set());
   const [isInputMode, setIsInputMode] = useState(true);
+  const [selectedParlay, setSelectedParlay] = useState(null);
+  const [analyzedFightsData, setAnalyzedFightsData] = useState([]);
+  const [showParlayDropdown, setShowParlayDropdown] = useState(false);
+  const [parlayRecommendation, setParlayRecommendation] = useState(null);
 
-  // Add this after your useState declarations
   const handleInputChange = (e, fighter, field) => {
     const { value } = e.target;
     setSelectedFight(prev => ({
@@ -32,14 +35,8 @@ function UFC() {
     }));
   };
 
-  // Add this for form submission
   const handleSubmitFighterData = async (e) => {
     e.preventDefault();
-    console.log("Submitting fighter data:", {
-      fighter1: selectedFight.fighter1,
-      fighter2: selectedFight.fighter2
-    });
-    
     try {
       const response = await fetch(`${API_URL}/api/predict`, {
         method: 'POST',
@@ -52,17 +49,18 @@ function UFC() {
         })
       });
 
-      if (!response.ok) {
-        const errorData = await response.text();
-        console.error('Server response:', errorData);
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
       const data = await response.json();
-      console.log('Received analysis:', data);
-      
       setPrediction(data);
       setOllamaResponse(data.message);
+      
+      // Add this: Store analyzed fight data for parlay
+      setAnalyzedFightsData(prev => [...prev, {
+        fighters: selectedFight,
+        prediction: data,
+        fightOutcome: data.fightOutcome,
+        bettingAdvice: data.bettingAdvice
+      }]);
+      
       setIsInputMode(false);
     } catch (error) {
       console.error('Error analyzing fight:', error);
@@ -236,6 +234,93 @@ function UFC() {
     } 
       setAnalyzedFights(prev => new Set([...prev, fightId])); //adds the fight id to the set
       return true;
+  };
+
+  const handleParlaySelect = (size) => {
+    setSelectedParlay(size);
+    generateParlay(size);
+  };
+
+  const calculateParlayOdds = (fights) => {
+    return fights.reduce((total, fight) => {
+      if (!fight || !fight.prediction || !fight.prediction.bettingAdvice) {
+        console.log('Missing betting advice for fight:', fight);
+        return total;
+      }
+
+      const odds = parseFloat(fight.prediction.bettingAdvice.fighter1?.expectedValue || 0);
+      return total * (1 + odds);
+    }, 1);
+  };
+
+  const calculateParlayConfidence = (fights) => {
+    const avgConfidence = fights.reduce((sum, fight) => {
+      return sum + parseFloat(fight.prediction.simulationConfidence);
+    }, 0) / fights.length;
+    return avgConfidence.toFixed(1);
+  };
+
+  const calculateParlayEV = (fights) => {
+    const totalOdds = calculateParlayOdds(fights);
+    const confidence = calculateParlayConfidence(fights);
+    return ((confidence/100 * totalOdds) - 1).toFixed(3);
+  };
+
+  const generateParlay = (size) => {
+    if (!analyzedFightsData || analyzedFightsData.length === 0) {
+      console.log('No analyzed fights available for parlay');
+      return;
+    }
+
+    const allBets = analyzedFightsData
+      .filter(fight => fight && fight.prediction)
+      .map(fight => {
+        const bets = [];
+
+        if (fight.prediction?.suggestedBet) {
+          const winnerBet = {
+            type: 'Winner',
+            fighter: fight.prediction.suggestedBet,
+            odds: fight.prediction.bettingAdvice?.[
+              fight.prediction.suggestedBet.toLowerCase().includes(fight.fighters.fighter1.name.toLowerCase()) 
+                ? 'fighter1' 
+                : 'fighter2'
+            ]?.expectedValue || 0,
+            confidence: fight.prediction.simulationConfidence || 0,
+            description: `${fight.prediction.suggestedBet} to win`
+          };
+          bets.push(winnerBet);
+        }
+
+        if (fight.fightOutcome?.confidence > 70) {
+          bets.push({
+            type: 'Method',
+            description: fight.fightOutcome.recommendedBet || 'Method unknown',
+            odds: (fight.fightOutcome.finishProbability || 0) / 100,
+            confidence: fight.fightOutcome.confidence || 0,
+            methodType: fight.fightOutcome.likelyMethod
+          });
+        }
+
+        return bets;
+      }).flat();
+
+    const sortedBets = allBets.sort((a, b) => {
+      const aValue = a.confidence * parseFloat(a.odds);
+      const bValue = b.confidence * parseFloat(b.odds);
+      return bValue - aValue;
+    });
+
+    const selectedBets = sortedBets.slice(0, size);
+
+    const parlayAnalysis = {
+      bets: selectedBets,
+      totalOdds: calculateParlayOdds(selectedBets),
+      confidence: calculateParlayConfidence(selectedBets),
+      expectedValue: calculateParlayEV(selectedBets)
+    };
+
+    setParlayRecommendation(parlayAnalysis);
   };
 
   return (
@@ -615,6 +700,53 @@ function UFC() {
                 </button>
               </>
             )}
+          </div>
+        </div>
+      )}
+      <div className="parlay-container">
+        <button 
+          className="parlay-button"
+          onClick={() => setShowParlayDropdown(!showParlayDropdown)}
+        >
+          Generate Parlay
+        </button>
+        {showParlayDropdown && (
+          <div className="parlay-dropdown">
+            <button onClick={() => handleParlaySelect(2)}>2-Fight Parlay</button>
+            <button onClick={() => handleParlaySelect(3)}>3-Fight Parlay</button>
+            <button onClick={() => handleParlaySelect(4)}>4-Fight Parlay</button>
+          </div>
+        )}
+      </div>
+      {parlayRecommendation && (
+        <div className="parlay-recommendation">
+          <h3>Parlay Recommendation</h3>
+          <div className="parlay-bets">
+            {parlayRecommendation.bets.map((bet, index) => (
+              <div key={index} className="parlay-bet">
+                {bet.type === 'Winner' ? (
+                  <>
+                    <p className="bet-fighter">Fight {index + 1}: {bet.fighter}</p>
+                    <p className="bet-type">Bet Type: Straight Win</p>
+                  </>
+                ) : (
+                  <>
+                    <p className="bet-method">Fight {index + 1}: {bet.description}</p>
+                    <p className="bet-type">Bet Type: Fight Outcome</p>
+                  </>
+                )}
+                <p className="bet-confidence">Confidence: {bet.confidence.toFixed(1)}%</p>
+                <p className="bet-odds">Expected Value: {parseFloat(bet.odds).toFixed(2)}</p>
+              </div>
+            ))}
+          </div>
+          <div className="parlay-stats">
+            <p>Total Parlay Odds: {parlayRecommendation.totalOdds.toFixed(2)}</p>
+            <p>Overall Confidence: {parlayRecommendation.confidence}%</p>
+            <p>Parlay Expected Value: {parlayRecommendation.expectedValue}</p>
+            <p className="parlay-advice">
+              Recommended Bet Size: {Math.min(parlayRecommendation.confidence/100 * 2, 5).toFixed(1)}% of bankroll
+            </p>
           </div>
         </div>
       )}
