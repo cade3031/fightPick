@@ -53,13 +53,23 @@ function UFC() {
       setPrediction(data);
       setOllamaResponse(data.message);
       
-      // Add this: Store analyzed fight data for parlay
-      setAnalyzedFightsData(prev => [...prev, {
+      console.log('Storing fight analysis:', {
         fighters: selectedFight,
         prediction: data,
         fightOutcome: data.fightOutcome,
         bettingAdvice: data.bettingAdvice
-      }]);
+      });
+      
+      setAnalyzedFightsData(prev => {
+        const newData = [...prev, {
+          fighters: selectedFight,
+          prediction: data,
+          fightOutcome: data.fightOutcome,
+          bettingAdvice: data.bettingAdvice
+        }];
+        console.log('Updated analyzedFightsData:', newData);
+        return newData;
+      });
       
       setIsInputMode(false);
     } catch (error) {
@@ -254,23 +264,49 @@ function UFC() {
   };
 
   const calculateParlayConfidence = (fights) => {
-    const avgConfidence = fights.reduce((sum, fight) => {
-      return sum + parseFloat(fight.prediction.simulationConfidence);
-    }, 0) / fights.length;
-    return avgConfidence.toFixed(1);
+    try {
+      if (!fights || fights.length === 0) {
+        console.log('No fights provided for confidence calculation');
+        return 0;
+      }
+
+      const avgConfidence = fights.reduce((sum, fight) => {
+        if (!fight || !fight.prediction || typeof fight.prediction.simulationConfidence === 'undefined') {
+          console.log('Missing simulation confidence for fight:', fight);
+          return sum;
+        }
+        return sum + parseFloat(fight.prediction.simulationConfidence || 0);
+      }, 0) / fights.length;
+
+      return avgConfidence.toFixed(1);
+    } catch (error) {
+      console.error('Error calculating parlay confidence:', error);
+      return 0;
+    }
   };
 
   const calculateParlayEV = (fights) => {
-    const totalOdds = calculateParlayOdds(fights);
-    const confidence = calculateParlayConfidence(fights);
-    return ((confidence/100 * totalOdds) - 1).toFixed(3);
+    try {
+      if (!fights || fights.length === 0) return 0;
+      
+      const totalOdds = calculateParlayOdds(fights);
+      const confidence = calculateParlayConfidence(fights);
+      return ((confidence/100 * totalOdds) - 1).toFixed(3);
+    } catch (error) {
+      console.error('Error calculating parlay EV:', error);
+      return 0;
+    }
   };
 
   const generateParlay = (size) => {
+    console.log('Current analyzedFightsData:', analyzedFightsData);
     if (!analyzedFightsData || analyzedFightsData.length === 0) {
       console.log('No analyzed fights available for parlay');
+      alert('Please analyze some fights first before generating a parlay');
       return;
     }
+
+    console.log('Generating parlay with data:', analyzedFightsData);
 
     const allBets = analyzedFightsData
       .filter(fight => fight && fight.prediction)

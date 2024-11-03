@@ -2,6 +2,15 @@ const express = require('express');
 const cors = require('cors');
 const app = express();
 const axios = require('axios');
+const { Pool } = require('pg');
+
+const pool = new Pool({
+  user: 'your_username',
+  host: 'localhost',
+  database: 'fightpick_db',
+  password: 'your_password',
+  port: 5432,
+});
 
 // Add middleware
 app.use(cors());
@@ -224,6 +233,42 @@ const getOllamaAnalysis = async (fighter1, fighter2, stats) => {
       response: error.response?.data
     });
     return 'AI analysis unavailable - Error: ' + error.message;
+  }
+};
+
+// Add this function to save fight analysis
+const saveFightAnalysis = async (fightData) => {
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    
+    const insertQuery = `
+      INSERT INTO fight_analyses (
+        fighter1_name, fighter2_name,
+        fighter1_stats, fighter2_stats,
+        prediction, betting_advice,
+        created_at
+      ) VALUES ($1, $2, $3, $4, $5, $6, NOW())
+      RETURNING id
+    `;
+    
+    const values = [
+      fightData.fighter1.name,
+      fightData.fighter2.name,
+      JSON.stringify(fightData.fighter1),
+      JSON.stringify(fightData.fighter2),
+      JSON.stringify(fightData.prediction),
+      JSON.stringify(fightData.bettingAdvice)
+    ];
+
+    const result = await client.query(insertQuery, values);
+    await client.query('COMMIT');
+    return result.rows[0].id;
+  } catch (error) {
+    await client.query('ROLLBACK');
+    throw error;
+  } finally {
+    client.release();
   }
 };
 
