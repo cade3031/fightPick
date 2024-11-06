@@ -89,6 +89,11 @@ const predictFightOutcome = (fighter1, fighter2) => {
     const f1WinRate = f1Wins / (f1Wins + f1Losses) * 100;
     const f2WinRate = f2Wins / (f2Wins + f2Losses) * 100;
 
+    // Calculate finish rates
+    const f1KoRate = (parseInt(fighter1.koWins) / f1Wins) * 100;
+    const f2KoRate = (parseInt(fighter2.koWins) / f2Wins) * 100;
+    const combinedFinishRate = (f1KoRate + f2KoRate) / 2;
+
     // Adjust probabilities based on stats
     const f1StrikeBonus = (parseFloat(fighter1.strikeAccuracy) || 0) / 100;
     const f2StrikeBonus = (parseFloat(fighter2.strikeAccuracy) || 0) / 100;
@@ -104,12 +109,11 @@ const predictFightOutcome = (fighter1, fighter2) => {
     f1Probability = (f1Probability / total * 100).toFixed(1);
     f2Probability = (f2Probability / total * 100).toFixed(1);
 
-    // Rest of your existing code...
     const outcome = {
       goesToDistance: combinedFinishRate < 65 ? "High" : "Low",
       finishProbability: combinedFinishRate,
       likelyMethod: null,
-      confidence: null,
+      confidence: 80,
       recommendedBet: "",
       winProbability: {
         fighter1: f1Probability,
@@ -149,46 +153,22 @@ const getOllamaAnalysis = async (fighter1, fighter2, stats) => {
   try {
     console.log("Starting llama2:7b-chat analysis...");
 
-    const prompt = `As an expert UFC analyst, provide a detailed analysis of this fight:
-
-${fighter1.name} vs ${fighter2.name}
-
-Fighter Stats:
-
-${fighter1.name}:
-- Record: ${fighter1.wins}-${fighter1.losses}
-- KO Rate: ${((fighter1.koWins/fighter1.wins) * 100).toFixed(1)}%
-- Strike Accuracy: ${fighter1.strikeAccuracy}%
-- Takedown Accuracy: ${fighter1.takedownAccuracy}%
-- Takedown Defense: ${fighter1.takedownDefense}%
-
-${fighter2.name}:
-- Record: ${fighter2.wins}-${fighter2.losses}
-- KO Rate: ${((fighter2.koWins/fighter2.wins) * 100).toFixed(1)}%
-- Strike Accuracy: ${fighter2.strikeAccuracy}%
-- Takedown Accuracy: ${fighter2.takedownAccuracy}%
-- Takedown Defense: ${fighter2.takedownDefense}%
-
-Analyze:
-1. Striking Advantage
-2. Grappling Edge
-3. Path to Victory
-4. Prediction with Confidence
-
-Keep the analysis focused and direct.`;
-
     const response = await axios.post(`${OLLAMA_URL}/api/generate`, {
       model: "llama2:7b-chat",
-      prompt: prompt,
+      prompt: `Analyze this UFC fight:
+${fighter1.name} vs ${fighter2.name}
+
+Stats:
+${fighter1.name}: ${fighter1.wins}-${fighter1.losses}, KO Rate: ${((fighter1.koWins/fighter1.wins) * 100).toFixed(1)}%, Strike Acc: ${fighter1.strikeAccuracy}%
+${fighter2.name}: ${fighter2.wins}-${fighter2.losses}, KO Rate: ${((fighter2.koWins/fighter2.wins) * 100).toFixed(1)}%, Strike Acc: ${fighter2.strikeAccuracy}%
+
+Who has the advantage and why?`,
       stream: false,
       options: {
         temperature: 0.7,
         top_p: 0.9,
-        max_tokens: 800,
-        stop: ["Human:", "Assistant:", "User:"]
+        max_tokens: 500
       }
-    }, {
-      timeout: 30000
     });
 
     console.log("Received llama2 response:", response.data);
@@ -392,20 +372,53 @@ app.post("/api/save-analysis", async (req, res) => {
 // Main prediction endpoint
 app.post("/api/predict", async (req, res) => {
   try {
-    console.log("Processing fight analysis...");
+    console.log("Starting fight analysis process...");
+    console.log("Fighter data received:", {
+      fighter1: req.body.fighter1,
+      fighter2: req.body.fighter2
+    });
 
-    // Save fighter data first
-    const [fighter1Id, fighter2Id] = await Promise.all([
-      saveFighterData(req.body.fighter1),
-      saveFighterData(req.body.fighter2)
-    ]);
+    // Save fighter data
+    console.log("Saving fighter data...");
+    const fighter1Id = await saveFighterData(req.body.fighter1);
+    const fighter2Id = await saveFighterData(req.body.fighter2);
+    console.log("Fighter data saved, IDs:", { fighter1Id, fighter2Id });
 
-    // Get both analysis results in parallel
-    const [outcomeAnalysis, aiAnalysis] = await Promise.all([
-      predictFightOutcome(req.body.fighter1, req.body.fighter2),
-      getOllamaAnalysis(req.body.fighter1, req.body.fighter2, "")
-    ]);
+    // Get statistical analysis
+    console.log("Calculating fight outcome...");
+    const outcomeAnalysis = await predictFightOutcome(req.body.fighter1, req.body.fighter2);
+    console.log("Fight outcome calculated:", outcomeAnalysis);
 
+    // Get AI analysis
+    console.log("Starting AI analysis...");
+    const aiAnalysis = await getOllamaAnalysis(req.body.fighter1, req.body.fighter2, "");
+    console.log("AI analysis received:", aiAnalysis);
+
+    // Save analysis
+    console.log("Saving complete analysis...");
+    const analysisData = {
+      eventDate: new Date(),
+      fighter1Id,
+      fighter2Id,
+      fighter1Odds: 0,  // Add odds if available
+      fighter2Odds: 0,
+      distanceProbability: outcomeAnalysis.prediction.goesToDistance === "High" ? 75 : 25,
+      finishProbability: outcomeAnalysis.prediction.finishProbability || 0,
+      likelyMethod: outcomeAnalysis.prediction.likelyMethod || 'Unknown',
+      confidenceLevel: outcomeAnalysis.prediction.confidence || 80,
+      recommendedBet: outcomeAnalysis.prediction.recommendedBet || 'No recommendation',
+      aiAnalysis: aiAnalysis,
+      strikingAdvantage: "Even",
+      grapplingAdvantage: "Even",
+      physicalAdvantages: "None",
+      winProbabilityFighter1: parseFloat(outcomeAnalysis.prediction.winProbability?.fighter1) || 50,
+      winProbabilityFighter2: parseFloat(outcomeAnalysis.prediction.winProbability?.fighter2) || 50
+    };
+
+    const analysisId = await saveFightAnalysis(analysisData);
+    console.log("Analysis saved with ID:", analysisId);
+
+    // Send response
     const response = {
       message: aiAnalysis,
       aiAnalysis: true,
@@ -413,12 +426,18 @@ app.post("/api/predict", async (req, res) => {
       fighter2Probability: outcomeAnalysis.prediction.winProbability?.fighter2 || "50.0",
       simulationConfidence: outcomeAnalysis.prediction.confidence || 80,
       suggestedBet: outcomeAnalysis.prediction.recommendedBet || 'No recommendation',
-      fightOutcome: outcomeAnalysis.prediction
+      fightOutcome: outcomeAnalysis.prediction,
+      analysisId
     };
 
+    console.log("Sending response to client:", response);
     res.json(response);
   } catch (error) {
-    console.error('Error in fight analysis:', error);
+    console.error('Detailed error in fight analysis:', {
+      message: error.message,
+      stack: error.stack,
+      data: req.body
+    });
     res.status(500).json({
       error: 'Failed to analyze fight',
       details: error.message
