@@ -133,31 +133,108 @@ Who has the advantage and why?`,
 // Add the predict endpoint
 app.post("/api/predict", async (req, res) => {
   try {
-    console.log("Received request at /api/predict");
+    console.log("Starting fight analysis process...");
     console.log("Request body:", req.body);
 
     const { fighter1, fighter2 } = req.body;
 
-    // Get fight prediction
-    const outcomeAnalysis = predictFightOutcome(fighter1, fighter2);
-    console.log("Fight prediction:", outcomeAnalysis);
+    // 1. First save fighter data to database
+    const client = await pool.connect();
+    try {
+      await client.query('BEGIN');  // Start transaction
 
-    // Get AI analysis
-    const aiAnalysis = await getOllamaAnalysis(fighter1, fighter2);
-    console.log("AI analysis:", aiAnalysis);
+      // Save both fighters
+      const fighter1Query = `
+        INSERT INTO fighters (name, age, height, reach, wins, losses, ko_wins, sub_wins, strike_accuracy, takedown_accuracy, takedown_defense)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+        ON CONFLICT (name) DO UPDATE 
+        SET age = $2, height = $3, reach = $4, wins = $5, losses = $6, ko_wins = $7, sub_wins = $8, strike_accuracy = $9, takedown_accuracy = $10, takedown_defense = $11
+        RETURNING id`;
 
-    const response = {
-      message: aiAnalysis,
-      aiAnalysis: true,
-      fighter1Probability: outcomeAnalysis.prediction.winProbability.fighter1,
-      fighter2Probability: outcomeAnalysis.prediction.winProbability.fighter2,
-      simulationConfidence: outcomeAnalysis.prediction.confidence,
-      suggestedBet: outcomeAnalysis.prediction.recommendedBet,
-      fightOutcome: outcomeAnalysis.prediction
-    };
+      const fighter1Result = await client.query(fighter1Query, [
+        fighter1.name,
+        parseInt(fighter1.age) || 0,
+        parseInt(fighter1.height) || 0,
+        parseInt(fighter1.reach) || 0,
+        parseInt(fighter1.wins) || 0,
+        parseInt(fighter1.losses) || 0,
+        parseInt(fighter1.koWins) || 0,
+        parseInt(fighter1.subWins) || 0,
+        parseFloat(fighter1.strikeAccuracy) || 0,
+        parseFloat(fighter1.takedownAccuracy) || 0,
+        parseFloat(fighter1.takedownDefense) || 0
+      ]);
 
-    console.log("Sending response:", response);
-    res.json(response);
+      const fighter2Result = await client.query(fighter1Query, [
+        fighter2.name,
+        parseInt(fighter2.age) || 0,
+        parseInt(fighter2.height) || 0,
+        parseInt(fighter2.reach) || 0,
+        parseInt(fighter2.wins) || 0,
+        parseInt(fighter2.losses) || 0,
+        parseInt(fighter2.koWins) || 0,
+        parseInt(fighter2.subWins) || 0,
+        parseFloat(fighter2.strikeAccuracy) || 0,
+        parseFloat(fighter2.takedownAccuracy) || 0,
+        parseFloat(fighter2.takedownDefense) || 0
+      ]);
+
+      // 2. Get AI analysis
+      console.log("Getting AI analysis...");
+      const aiAnalysis = await getOllamaAnalysis(fighter1, fighter2);
+      console.log("AI analysis received:", aiAnalysis);
+
+      // 3. Calculate fight outcome
+      console.log("Calculating fight outcome...");
+      const outcomeAnalysis = predictFightOutcome(fighter1, fighter2);
+      console.log("Fight outcome calculated:", outcomeAnalysis);
+
+      // 4. Save analysis to database
+      const analysisQuery = `
+        INSERT INTO fight_analyses (
+          fighter1_id, fighter2_id, 
+          distance_probability, finish_probability,
+          confidence_level, recommended_bet, ai_analysis,
+          win_probability_fighter1, win_probability_fighter2
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+        RETURNING id`;
+
+      const analysisResult = await client.query(analysisQuery, [
+        fighter1Result.rows[0].id,
+        fighter2Result.rows[0].id,
+        outcomeAnalysis.prediction.goesToDistance === "High" ? 75 : 25,
+        outcomeAnalysis.prediction.finishProbability,
+        outcomeAnalysis.prediction.confidence,
+        outcomeAnalysis.prediction.recommendedBet,
+        aiAnalysis,
+        parseFloat(outcomeAnalysis.prediction.winProbability.fighter1),
+        parseFloat(outcomeAnalysis.prediction.winProbability.fighter2)
+      ]);
+
+      await client.query('COMMIT');
+
+      // 5. Send response
+      const response = {
+        message: aiAnalysis,
+        aiAnalysis: true,
+        fighter1Probability: outcomeAnalysis.prediction.winProbability.fighter1,
+        fighter2Probability: outcomeAnalysis.prediction.winProbability.fighter2,
+        simulationConfidence: outcomeAnalysis.prediction.confidence,
+        suggestedBet: outcomeAnalysis.prediction.recommendedBet,
+        fightOutcome: outcomeAnalysis.prediction,
+        analysisId: analysisResult.rows[0].id
+      };
+
+      console.log("Sending response:", response);
+      res.json(response);
+
+    } catch (error) {
+      await client.query('ROLLBACK');
+      throw error;
+    } finally {
+      client.release();
+    }
+
   } catch (error) {
     console.error('Error in fight analysis:', error);
     res.status(500).json({
