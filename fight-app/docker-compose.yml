@@ -30,7 +30,7 @@ services:
     environment:
       - DATABASE_URL=postgresql://postgres:postgres@db:5432/fightpick_db
       - OLLAMA_URL=http://ollama:11434
-      - NODE_ENV=development
+      - PORT=8080
     command: npm run dev
     volumes:
       - ./server/src:/app/server/src

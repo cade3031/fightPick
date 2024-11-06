@@ -7,7 +7,7 @@ const pool = require('./config/db');
 
 // Update CORS configuration
 app.use(cors({
-  origin: ['http://100.119.251.66:3000', 'http://localhost:3000'],
+  origin: ['http://100.119.251.66:3000', 'http://localhost:3000', '*'],  // Allow all origins for testing
   methods: ['GET', 'POST'],
   allowedHeaders: ['Content-Type'],
   credentials: true
@@ -615,10 +615,14 @@ app.get("/api/parlays/:parlayId", async (req, res) => {
   }
 });
 
+// Update the listening configuration
 const PORT = process.env.PORT || 8080;
-app.listen(PORT, '0.0.0.0', () => {
+const HOST = '0.0.0.0';  // Listen on all interfaces
+
+app.listen(PORT, HOST, () => {
   console.log(`Server running on port ${PORT}`);
   console.log(`Server URL: http://100.119.251.66:${PORT}`);
+  console.log('Server is ready to accept connections');
 });
 
 // Add this function
