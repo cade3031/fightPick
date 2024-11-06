@@ -147,102 +147,47 @@ const OLLAMA_URL = process.env.OLLAMA_URL || "http://ollama:11434";
 // Add this function to call Ollama
 const getOllamaAnalysis = async (fighter1, fighter2, stats) => {
   try {
-    console.log("Starting llama2 analysis...");
+    console.log("Starting Mixtral analysis...");
 
-    const prompt = `You are an expert UFC analyst and fight predictor. Provide a comprehensive analysis of this fight:
+    const prompt = `As a UFC analyst, provide a concise analysis of this fight:
 
 ${fighter1.name} vs ${fighter2.name}
 
-Fighter Stats:
+Stats:
+${fighter1.name}: ${fighter1.wins}-${fighter1.losses}, KO Rate: ${((fighter1.koWins/fighter1.wins) * 100).toFixed(1)}%, Strike Acc: ${fighter1.strikeAccuracy}%, TD Acc: ${fighter1.takedownAccuracy}%
+${fighter2.name}: ${fighter2.wins}-${fighter2.losses}, KO Rate: ${((fighter2.koWins/fighter2.wins) * 100).toFixed(1)}%, Strike Acc: ${fighter2.strikeAccuracy}%, TD Acc: ${fighter2.takedownAccuracy}%
 
-${fighter1.name}:
-- Record: ${fighter1.wins}-${fighter1.losses}
-- KO Rate: ${((fighter1.koWins/fighter1.wins) * 100).toFixed(1)}%
-- Strike Accuracy: ${fighter1.strikeAccuracy}%
-- Takedown Accuracy: ${fighter1.takedownAccuracy}%
-- Takedown Defense: ${fighter1.takedownDefense}%
-- Height: ${fighter1.height}
-- Reach: ${fighter1.reach}
+Analyze:
+1. Striking Advantage
+2. Grappling Edge
+3. Path to Victory
+4. Prediction with Confidence
 
-${fighter2.name}:
-- Record: ${fighter2.wins}-${fighter2.losses}
-- KO Rate: ${((fighter2.koWins/fighter2.wins) * 100).toFixed(1)}%
-- Strike Accuracy: ${fighter2.strikeAccuracy}%
-- Takedown Accuracy: ${fighter2.takedownAccuracy}%
-- Takedown Defense: ${fighter2.takedownDefense}%
-- Height: ${fighter2.height}
-- Reach: ${fighter2.reach}
-
-Please provide a detailed fight analysis covering:
-
-1. Striking Analysis:
-- Compare their striking statistics in detail
-- Analyze KO rates and what they indicate
-- Who has the technical advantage in striking?
-- How might their reach difference affect the striking exchanges?
-
-2. Grappling Assessment:
-- Compare takedown accuracy and defense stats
-- Who has the advantage in wrestling?
-- How might their grappling skills influence the fight?
-- Is there a clear path to victory through grappling?
-
-3. Physical Advantages:
-- Analyze height and reach differences
-- How might these physical attributes affect the fight?
-- Who can better utilize their physical advantages?
-
-4. Strategic Breakdown:
-- What is each fighter's optimal strategy?
-- How should they approach this matchup?
-- What key factors could determine the outcome?
-
-5. Fight Prediction:
-- Who is most likely to win and why?
-- What is the most probable method of victory?
-- How confident are you in this prediction?
-- What specific factors led to this conclusion?
-
-6. Fight Flow Analysis:
-- How do you expect the fight to unfold?
-- What are the key moments to watch for?
-- What potential fight-ending scenarios are most likely?
-
-Please be specific and explain your reasoning thoroughly for each point. Support your analysis with the provided statistics and explain how they influence your predictions.`;
+Keep the analysis focused and direct.`;
 
     const response = await axios.post(`${OLLAMA_URL}/api/generate`, {
-      model: "llama2:7b-chat",
+      model: "mixtral:8x7b-instruct",
       prompt: prompt,
       stream: false,
       options: {
-        temperature: 0.9,    // Increased for more creative and detailed analysis
-        top_p: 0.95,         // Slightly increased for more diverse responses
-        max_tokens: 2000,    // Significantly increased for longer responses
+        temperature: 0.7,
+        top_p: 0.9,
+        max_tokens: 1500,
         stop: ["Human:", "Assistant:", "User:"]
       }
     }, {
-      timeout: 120000  // Increased to 2 minutes for longer generation time
+      timeout: 90000
     });
 
-    console.log("Received llama2 response:", response.data);
+    console.log("Received Mixtral response:", response.data);
     
     if (!response.data || !response.data.response) {
-      throw new Error('Invalid response format from llama2');
+      throw new Error('Invalid response format from Mixtral');
     }
 
-    // Clean up and format the response
-    let analysis = response.data.response
-      .replace(/\n{3,}/g, '\n\n')  // Remove extra newlines
-      .trim();
-
-    // Add section headers if they're missing
-    if (!analysis.includes('Striking Analysis')) {
-      analysis = `Fight Analysis:\n\n${analysis}`;
-    }
-
-    return analysis;
+    return response.data.response.trim();
   } catch (error) {
-    console.error('llama2 error:', error);
+    console.error('Mixtral error:', error);
     return `AI analysis unavailable - ${error.message}`;
   }
 };
