@@ -147,47 +147,74 @@ const OLLAMA_URL = process.env.OLLAMA_URL || "http://ollama:11434";
 // Add this function to call Ollama
 const getOllamaAnalysis = async (fighter1, fighter2, stats) => {
   try {
-    console.log("Starting Mixtral analysis...");
+    console.log("Starting llama2:13b analysis...");
 
-    const prompt = `As a UFC analyst, provide a concise analysis of this fight:
+    const prompt = `As an expert UFC analyst, provide a detailed analysis of this fight:
 
 ${fighter1.name} vs ${fighter2.name}
 
-Stats:
-${fighter1.name}: ${fighter1.wins}-${fighter1.losses}, KO Rate: ${((fighter1.koWins/fighter1.wins) * 100).toFixed(1)}%, Strike Acc: ${fighter1.strikeAccuracy}%, TD Acc: ${fighter1.takedownAccuracy}%
-${fighter2.name}: ${fighter2.wins}-${fighter2.losses}, KO Rate: ${((fighter2.koWins/fighter2.wins) * 100).toFixed(1)}%, Strike Acc: ${fighter2.strikeAccuracy}%, TD Acc: ${fighter2.takedownAccuracy}%
+Fighter Stats:
 
-Analyze:
-1. Striking Advantage
-2. Grappling Edge
-3. Path to Victory
-4. Prediction with Confidence
+${fighter1.name}:
+- Record: ${fighter1.wins}-${fighter1.losses}
+- KO Rate: ${((fighter1.koWins/fighter1.wins) * 100).toFixed(1)}%
+- Strike Accuracy: ${fighter1.strikeAccuracy}%
+- Takedown Accuracy: ${fighter1.takedownAccuracy}%
+- Takedown Defense: ${fighter1.takedownDefense}%
 
-Keep the analysis focused and direct.`;
+${fighter2.name}:
+- Record: ${fighter2.wins}-${fighter2.losses}
+- KO Rate: ${((fighter2.koWins/fighter2.wins) * 100).toFixed(1)}%
+- Strike Accuracy: ${fighter2.strikeAccuracy}%
+- Takedown Accuracy: ${fighter2.takedownAccuracy}%
+- Takedown Defense: ${fighter2.takedownDefense}%
+
+Provide a comprehensive analysis covering:
+
+1. Striking Analysis:
+- Compare their striking statistics
+- Who has the technical advantage?
+- How might their striking styles match up?
+
+2. Grappling Assessment:
+- Compare takedown and defense abilities
+- Who has the wrestling/grappling edge?
+- How will this affect the fight?
+
+3. Path to Victory:
+- What is each fighter's best strategy?
+- Most likely way to win for each?
+
+4. Final Prediction:
+- Who is most likely to win and why?
+- What method of victory?
+- Confidence level in prediction?
+
+Explain your reasoning thoroughly.`;
 
     const response = await axios.post(`${OLLAMA_URL}/api/generate`, {
-      model: "mixtral:8x7b-instruct",
+      model: "llama2:13b",
       prompt: prompt,
       stream: false,
       options: {
-        temperature: 0.7,
-        top_p: 0.9,
-        max_tokens: 1500,
+        temperature: 0.8,
+        top_p: 0.95,
+        max_tokens: 2000,
         stop: ["Human:", "Assistant:", "User:"]
       }
     }, {
-      timeout: 90000
+      timeout: 120000
     });
 
-    console.log("Received Mixtral response:", response.data);
+    console.log("Received llama2:13b response:", response.data);
     
     if (!response.data || !response.data.response) {
-      throw new Error('Invalid response format from Mixtral');
+      throw new Error('Invalid response format from llama2:13b');
     }
 
     return response.data.response.trim();
   } catch (error) {
-    console.error('Mixtral error:', error);
+    console.error('llama2:13b error:', error);
     return `AI analysis unavailable - ${error.message}`;
   }
 };
