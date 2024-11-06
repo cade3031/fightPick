@@ -193,17 +193,17 @@ Provide a comprehensive analysis covering:
 Explain your reasoning thoroughly.`;
 
     const response = await axios.post(`${OLLAMA_URL}/api/generate`, {
-      model: "llama2:13b",
+      model: "llama2:7b-chat",
       prompt: prompt,
       stream: false,
       options: {
         temperature: 0.8,
-        top_p: 0.95,
-        max_tokens: 2000,
+        top_p: 0.9,
+        max_tokens: 1000,
         stop: ["Human:", "Assistant:", "User:"]
       }
     }, {
-      timeout: 120000
+      timeout: 60000
     });
 
     console.log("Received llama2:13b response:", response.data);
