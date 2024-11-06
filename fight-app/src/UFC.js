@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import './UFC.css';
 
 // Replace YOUR_TAILSCALE_IP with your actual Tailscale IP address
-const API_URL = 'http://100.119.251.66:8080';  // Replace with your server's IP
+const API_URL = 'http://100.119.251.66:8080';  // Backend URL
 
 const defaultFightOutcome = {
   goesToDistance: "Unknown",
@@ -44,6 +44,8 @@ function UFC() {
 
   const handleSubmitFighterData = async (e) => {
     e.preventDefault();
+    console.log("Form submitted with data:", selectedFight);
+
     const fighterData = {
       fighter1: {
         ...selectedFight.fighter1,
@@ -69,6 +71,9 @@ function UFC() {
       }
     };
     
+    console.log("Sending request to:", `${API_URL}/api/predict`);
+    console.log("Request data:", fighterData);
+    
     try {
       const response = await fetch(`${API_URL}/api/predict`, {
         method: 'POST',
@@ -78,8 +83,12 @@ function UFC() {
         body: JSON.stringify(fighterData)
       });
 
+      console.log("Response status:", response.status);
+      
       if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+        const errorData = await response.json();
+        console.error("Error response:", errorData);
+        throw new Error(`HTTP error! status: ${response.status}, message: ${errorData.error || 'Unknown error'}`);
       }
 
       const data = await response.json();
@@ -137,14 +146,17 @@ function UFC() {
   }, []);
 
   const handleFightClick = (event, competitors) => {
+    console.log("handleFightClick called with:", { event, competitors });
+
     if (!handleAnalyzeFight(event, competitors)) {
+      console.log("handleAnalyzeFight returned false");
       return;
     }
 
     // Add safety checks for markets data
     const markets = event.displayGroups?.[0]?.markets;
     if (!markets || !markets[0]?.outcomes) {
-      console.error('Missing markets data');
+      console.error('Missing markets data:', { markets });
       return;
     }
 
@@ -162,7 +174,6 @@ function UFC() {
       strikeAccuracy: '',
       takedownAccuracy: '',
       takedownDefense: ''
-
     };
     
     const fighter2 = {
@@ -181,7 +192,7 @@ function UFC() {
       takedownDefense: ''
     };
     
-    console.log('Fighter data:', { fighter1, fighter2 });
+    console.log('Setting fighter data:', { fighter1, fighter2 });
     
     setSelectedFight({ fighter1, fighter2 });
     setShowPopup(true);

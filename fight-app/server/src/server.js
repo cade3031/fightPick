@@ -7,9 +7,10 @@ const pool = require('./config/db');
 
 // Update CORS configuration
 app.use(cors({
-  origin: '*',  // Be more specific in production
+  origin: ['http://100.119.251.66:3000', 'http://localhost:3000'],
   methods: ['GET', 'POST'],
-  allowedHeaders: ['Content-Type']
+  allowedHeaders: ['Content-Type'],
+  credentials: true
 }));
 
 // Add middleware
