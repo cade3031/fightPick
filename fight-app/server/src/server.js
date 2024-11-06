@@ -90,8 +90,8 @@ const predictFightOutcome = (fighter1, fighter2) => {
     const f2WinRate = f2Wins / (f2Wins + f2Losses) * 100;
 
     // Calculate finish rates
-    const f1KoRate = (parseInt(fighter1.koWins) / f1Wins) * 100;
-    const f2KoRate = (parseInt(fighter2.koWins) / f2Wins) * 100;
+    const f1KoRate = (parseInt(fighter1.koWins) / f1Wins) * 100 || 0;
+    const f2KoRate = (parseInt(fighter2.koWins) / f2Wins) * 100 || 0;
     const combinedFinishRate = (f1KoRate + f2KoRate) / 2;
 
     // Adjust probabilities based on stats
@@ -372,6 +372,9 @@ app.post("/api/save-analysis", async (req, res) => {
 // Main prediction endpoint
 app.post("/api/predict", async (req, res) => {
   try {
+    console.log("Received request at /api/predict");
+    console.log("Request body:", req.body);
+
     console.log("Starting fight analysis process...");
     console.log("Fighter data received:", {
       fighter1: req.body.fighter1,
@@ -615,7 +618,7 @@ app.get("/api/parlays/:parlayId", async (req, res) => {
 const PORT = process.env.PORT || 8080;
 app.listen(PORT, '0.0.0.0', () => {
   console.log(`Server running on port ${PORT}`);
-  console.log(`Server URL: http://localhost:${PORT}`);
+  console.log(`Server URL: http://100.119.251.66:${PORT}`);
 });
 
 // Add this function
@@ -635,3 +638,32 @@ const validateFighterData = (fighter) => {
     takedownDefense: parseFloat(fighter.takedownDefense) || 0
   };
 };
+
+// Add this test endpoint
+app.get("/api/test-llama", async (req, res) => {
+  try {
+    console.log("Testing Llama2 connection...");
+    
+    const response = await axios.post(`${OLLAMA_URL}/api/generate`, {
+      model: "llama2:7b-chat",
+      prompt: "Analyze this test UFC fight: Fighter A (10-2) vs Fighter B (8-4). Who has the advantage?",
+      stream: false,
+      options: {
+        temperature: 0.7,
+        top_p: 0.9,
+        max_tokens: 500
+      }
+    });
+
+    console.log("Llama2 test response:", response.data);
+    res.json({ success: true, response: response.data.response });
+  } catch (error) {
+    console.error('Llama2 test error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Add this near the top with other endpoints
+app.get('/api/test', (req, res) => {
+  res.json({ message: 'API is working!' });
+});
