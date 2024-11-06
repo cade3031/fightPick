@@ -147,7 +147,7 @@ const OLLAMA_URL = process.env.OLLAMA_URL || "http://ollama:11434";
 // Add this function to call Ollama
 const getOllamaAnalysis = async (fighter1, fighter2, stats) => {
   try {
-    console.log("Starting llama2:13b analysis...");
+    console.log("Starting llama2:7b-chat analysis...");
 
     const prompt = `As an expert UFC analyst, provide a detailed analysis of this fight:
 
@@ -169,52 +169,37 @@ ${fighter2.name}:
 - Takedown Accuracy: ${fighter2.takedownAccuracy}%
 - Takedown Defense: ${fighter2.takedownDefense}%
 
-Provide a comprehensive analysis covering:
+Analyze:
+1. Striking Advantage
+2. Grappling Edge
+3. Path to Victory
+4. Prediction with Confidence
 
-1. Striking Analysis:
-- Compare their striking statistics
-- Who has the technical advantage?
-- How might their striking styles match up?
-
-2. Grappling Assessment:
-- Compare takedown and defense abilities
-- Who has the wrestling/grappling edge?
-- How will this affect the fight?
-
-3. Path to Victory:
-- What is each fighter's best strategy?
-- Most likely way to win for each?
-
-4. Final Prediction:
-- Who is most likely to win and why?
-- What method of victory?
-- Confidence level in prediction?
-
-Explain your reasoning thoroughly.`;
+Keep the analysis focused and direct.`;
 
     const response = await axios.post(`${OLLAMA_URL}/api/generate`, {
       model: "llama2:7b-chat",
       prompt: prompt,
       stream: false,
       options: {
-        temperature: 0.8,
+        temperature: 0.7,
         top_p: 0.9,
-        max_tokens: 1000,
+        max_tokens: 800,
         stop: ["Human:", "Assistant:", "User:"]
       }
     }, {
-      timeout: 60000
+      timeout: 30000
     });
 
-    console.log("Received llama2:13b response:", response.data);
+    console.log("Received llama2 response:", response.data);
     
     if (!response.data || !response.data.response) {
-      throw new Error('Invalid response format from llama2:13b');
+      throw new Error('Invalid response format');
     }
 
     return response.data.response.trim();
   } catch (error) {
-    console.error('llama2:13b error:', error);
+    console.error('llama2 error:', error);
     return `AI analysis unavailable - ${error.message}`;
   }
 };
