@@ -171,54 +171,33 @@ const predictFightOutcome = (fighter1, fighter2) => {
 };
 
 // Update this constant
-const OLLAMA_URL = process.env.OLLAMA_URL || "http://ollama:11436";
+const OLLAMA_URL = process.env.OLLAMA_URL || "http://fight-app-ollama:11434";
 
 // Add this function to call Ollama
 const getOllamaAnalysis = async (fighter1, fighter2, stats) => {
   try {
-    console.log("Starting llama2:7b-chat analysis for:", {
-      fighter1: fighter1.name,
-      fighter2: fighter2.name
+    console.log("Testing Ollama connection...");
+    
+    // Test connection first
+    const testResponse = await axios.get(`${OLLAMA_URL}/api/tags`).catch(e => {
+      console.error('Ollama health check failed:', e);
+      throw new Error('Ollama service not available');
     });
+
+    console.log("Ollama connection test response:", testResponse.data);
 
     const response = await axios.post(`${OLLAMA_URL}/api/generate`, {
       model: "llama2:7b-chat",
-      prompt: `You are a UFC fight analyst. Analyze this fight between ${fighter1.name} and ${fighter2.name} based on their stats:
-
-${fighter1.name}:
-- Record: ${fighter1.wins}-${fighter1.losses}
-- KO Rate: ${((fighter1.koWins/fighter1.wins) * 100).toFixed(1)}%
-- Strike Accuracy: ${fighter1.strikeAccuracy}%
-- Takedown Accuracy: ${fighter1.takedownAccuracy}%
-
-${fighter2.name}:
-- Record: ${fighter2.wins}-${fighter2.losses}
-- KO Rate: ${((fighter2.koWins/fighter2.wins) * 100).toFixed(1)}%
-- Strike Accuracy: ${fighter2.strikeAccuracy}%
-- Takedown Accuracy: ${fighter2.takedownAccuracy}%
-
-Provide a brief analysis focusing on:
-1. Who has the striking advantage and why
-2. Who has the grappling advantage and why
-3. Most likely path to victory for each fighter
-4. Prediction with confidence level`,
+      prompt: `Analyze this UFC fight between ${fighter1.name} and ${fighter2.name}.
+      ${fighter1.name} Record: ${fighter1.wins}-${fighter1.losses}
+      ${fighter2.name} Record: ${fighter2.wins}-${fighter2.losses}
+      Who has the advantage?`,
       stream: false
     });
 
-    console.log("Fight analysis response:", response.data);
-
-    if (!response.data || !response.data.response) {
-      throw new Error('Invalid response format');
-    }
-
     return response.data.response;
   } catch (error) {
-    console.error('Ollama error:', {
-      message: error.message,
-      status: error.response?.status,
-      data: error.response?.data,
-      url: error.config?.url
-    });
+    console.error('Ollama error:', error);
     return `AI analysis unavailable - ${error.message}`;
   }
 };
