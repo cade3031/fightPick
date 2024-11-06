@@ -79,79 +79,50 @@ const analyzeGrapplingAdvantage = (f1, f2) => {
 // Add this function after your other analysis functions
 const predictFightOutcome = (fighter1, fighter2) => {
   try {
-    // Add default values and validation
+    // Calculate win probabilities based on records and stats
     const f1Wins = parseInt(fighter1.wins) || 0;
-    const f1KoWins = parseInt(fighter1.koWins) || 0;
-    const f1SubWins = parseInt(fighter1.subWins) || 0;
-    const f1DecisionWins = parseInt(fighter1.decisionWins) || 0;
-    
+    const f1Losses = parseInt(fighter1.losses) || 0;
     const f2Wins = parseInt(fighter2.wins) || 0;
-    const f2KoWins = parseInt(fighter2.koWins) || 0;
-    const f2SubWins = parseInt(fighter2.subWins) || 0;
-    const f2DecisionWins = parseInt(fighter2.decisionWins) || 0;
+    const f2Losses = parseInt(fighter2.losses) || 0;
 
-    // Calculate rates with validation
-    const f1KoRate = f1Wins > 0 ? (f1KoWins / f1Wins) * 100 : 0;
-    const f1SubRate = f1Wins > 0 ? (f1SubWins / f1Wins) * 100 : 0;
-    const f1DecisionRate = f1Wins > 0 ? (f1DecisionWins / f1Wins) * 100 : 0;
-    
-    const f2KoRate = f2Wins > 0 ? (f2KoWins / f2Wins) * 100 : 0;
-    const f2SubRate = f2Wins > 0 ? (f2SubWins / f2Wins) * 100 : 0;
-    const f2DecisionRate = f2Wins > 0 ? (f2DecisionWins / f2Wins) * 100 : 0;
+    // Calculate win rates
+    const f1WinRate = f1Wins / (f1Wins + f1Losses) * 100;
+    const f2WinRate = f2Wins / (f2Wins + f2Losses) * 100;
 
-    // Calculate combined probabilities with validation
-    const combinedKOProb = (f1KoRate + f2KoRate) / 2 || 0;
-    const combinedSubProb = (f1SubRate + f2SubRate) / 2 || 0;
-    const combinedDecisionProb = (f1DecisionRate + f2DecisionRate) / 2 || 0;
-    const combinedFinishRate = Math.min(100, (combinedKOProb + combinedSubProb)) || 0;
+    // Adjust probabilities based on stats
+    const f1StrikeBonus = (parseFloat(fighter1.strikeAccuracy) || 0) / 100;
+    const f2StrikeBonus = (parseFloat(fighter2.strikeAccuracy) || 0) / 100;
+    const f1TakedownBonus = (parseFloat(fighter1.takedownAccuracy) || 0) / 100;
+    const f2TakedownBonus = (parseFloat(fighter2.takedownAccuracy) || 0) / 100;
 
-    // Calculate win probabilities
-    const f1TotalRate = f1Wins > 0 ? 
-      ((f1KoWins + f1SubWins + f1DecisionWins) / f1Wins) * 100 : 0;
-    const f2TotalRate = f2Wins > 0 ? 
-      ((f2KoWins + f2SubWins + f2DecisionWins) / f2Wins) * 100 : 0;
+    // Calculate final probabilities
+    let f1Probability = (f1WinRate + (f1StrikeBonus + f1TakedownBonus) * 25) / 1.5;
+    let f2Probability = (f2WinRate + (f2StrikeBonus + f2TakedownBonus) * 25) / 1.5;
 
-    let outcome = {
+    // Normalize probabilities to sum to 100%
+    const total = f1Probability + f2Probability;
+    f1Probability = (f1Probability / total * 100).toFixed(1);
+    f2Probability = (f2Probability / total * 100).toFixed(1);
+
+    // Rest of your existing code...
+    const outcome = {
       goesToDistance: combinedFinishRate < 65 ? "High" : "Low",
       finishProbability: combinedFinishRate,
       likelyMethod: null,
       confidence: null,
       recommendedBet: "",
       winProbability: {
-        fighter1: f1TotalRate.toFixed(1),
-        fighter2: f2TotalRate.toFixed(1)
+        fighter1: f1Probability,
+        fighter2: f2Probability
       }
     };
 
-    // Determine most likely finish method
-    if (combinedFinishRate > 65) {
-      outcome.likelyMethod = combinedKOProb > combinedSubProb ? "KO/TKO" : "Submission";
-      outcome.confidence = Math.min(Math.max(combinedFinishRate, 60), 90);
-    }
-
-    // Generate betting recommendation
-    if (combinedDecisionProb > 65) {
-      outcome.recommendedBet = "Fight goes to decision (Confident)";
-    } else if (combinedKOProb > 60) {
-      outcome.recommendedBet = "Fight doesn't go to decision - Look for KO/TKO (High Confidence)";
-    } else if (combinedSubProb > 60) {
-      outcome.recommendedBet = "Fight doesn't go to decision - Look for Submission (High Confidence)";
-    } else if ((combinedKOProb + combinedSubProb) > 70) {
-      outcome.recommendedBet = "Fight doesn't go to decision (Moderate Confidence)";
-    } else {
-      outcome.recommendedBet = "No strong lean on fight outcome method";
-    }
-
     return {
       prediction: outcome,
-      analysis: `Fight Outcome Analysis:\n` +
-                `Distance Probability: ${outcome.goesToDistance} (${(combinedDecisionProb).toFixed(1)}%)\n` +
-                `Finish Probability: ${combinedFinishRate.toFixed(1)}%\n` +
-                `${outcome.likelyMethod ? `Most Likely Method: ${outcome.likelyMethod} (${outcome.confidence.toFixed(1)}% confidence)\n` : ''}\n` +
-                `Safe Bet Recommendation: ${outcome.recommendedBet}\n` +
+      analysis: `Fight Analysis:\n` +
                 `Win Probability:\n` +
-                `${fighter1.name}: ${outcome.winProbability.fighter1}%\n` +
-                `${fighter2.name}: ${outcome.winProbability.fighter2}%`
+                `${fighter1.name}: ${f1Probability}%\n` +
+                `${fighter2.name}: ${f2Probability}%`
     };
   } catch (error) {
     console.error('Error in predictFightOutcome:', error);
@@ -161,8 +132,8 @@ const predictFightOutcome = (fighter1, fighter2) => {
         finishProbability: 0,
         recommendedBet: "Insufficient data for prediction",
         winProbability: {
-          fighter1: "0.0",
-          fighter2: "0.0"
+          fighter1: "50.0",
+          fighter2: "50.0"
         }
       },
       analysis: 'Unable to predict fight outcome - insufficient data'
@@ -176,37 +147,103 @@ const OLLAMA_URL = process.env.OLLAMA_URL || "http://ollama:11434";
 // Add this function to call Ollama
 const getOllamaAnalysis = async (fighter1, fighter2, stats) => {
   try {
-    console.log("Starting Ollama analysis...");
+    console.log("Starting llama2 analysis...");
+
+    const prompt = `You are an expert UFC analyst and fight predictor. Provide a comprehensive analysis of this fight:
+
+${fighter1.name} vs ${fighter2.name}
+
+Fighter Stats:
+
+${fighter1.name}:
+- Record: ${fighter1.wins}-${fighter1.losses}
+- KO Rate: ${((fighter1.koWins/fighter1.wins) * 100).toFixed(1)}%
+- Strike Accuracy: ${fighter1.strikeAccuracy}%
+- Takedown Accuracy: ${fighter1.takedownAccuracy}%
+- Takedown Defense: ${fighter1.takedownDefense}%
+- Height: ${fighter1.height}
+- Reach: ${fighter1.reach}
+
+${fighter2.name}:
+- Record: ${fighter2.wins}-${fighter2.losses}
+- KO Rate: ${((fighter2.koWins/fighter2.wins) * 100).toFixed(1)}%
+- Strike Accuracy: ${fighter2.strikeAccuracy}%
+- Takedown Accuracy: ${fighter2.takedownAccuracy}%
+- Takedown Defense: ${fighter2.takedownDefense}%
+- Height: ${fighter2.height}
+- Reach: ${fighter2.reach}
+
+Please provide a detailed fight analysis covering:
+
+1. Striking Analysis:
+- Compare their striking statistics in detail
+- Analyze KO rates and what they indicate
+- Who has the technical advantage in striking?
+- How might their reach difference affect the striking exchanges?
+
+2. Grappling Assessment:
+- Compare takedown accuracy and defense stats
+- Who has the advantage in wrestling?
+- How might their grappling skills influence the fight?
+- Is there a clear path to victory through grappling?
+
+3. Physical Advantages:
+- Analyze height and reach differences
+- How might these physical attributes affect the fight?
+- Who can better utilize their physical advantages?
+
+4. Strategic Breakdown:
+- What is each fighter's optimal strategy?
+- How should they approach this matchup?
+- What key factors could determine the outcome?
+
+5. Fight Prediction:
+- Who is most likely to win and why?
+- What is the most probable method of victory?
+- How confident are you in this prediction?
+- What specific factors led to this conclusion?
+
+6. Fight Flow Analysis:
+- How do you expect the fight to unfold?
+- What are the key moments to watch for?
+- What potential fight-ending scenarios are most likely?
+
+Please be specific and explain your reasoning thoroughly for each point. Support your analysis with the provided statistics and explain how they influence your predictions.`;
 
     const response = await axios.post(`${OLLAMA_URL}/api/generate`, {
       model: "llama2:7b-chat",
-      prompt: `Analyze this UFC fight briefly:
-      ${fighter1.name} (${fighter1.wins}-${fighter1.losses}) vs ${fighter2.name} (${fighter2.wins}-${fighter2.losses})
-      
-      Key stats for ${fighter1.name}:
-      - Strike Accuracy: ${fighter1.strikeAccuracy}%
-      - Takedown Accuracy: ${fighter1.takedownAccuracy}%
-      
-      Key stats for ${fighter2.name}:
-      - Strike Accuracy: ${fighter2.strikeAccuracy}%
-      - Takedown Accuracy: ${fighter2.takedownAccuracy}%
-      
-      Provide a short analysis focusing on who has the advantage.`,
+      prompt: prompt,
       stream: false,
       options: {
-        temperature: 0.7,
-        max_tokens: 200  // Limit response length
+        temperature: 0.9,    // Increased for more creative and detailed analysis
+        top_p: 0.95,         // Slightly increased for more diverse responses
+        max_tokens: 2000,    // Significantly increased for longer responses
+        stop: ["Human:", "Assistant:", "User:"]
       }
     }, {
-      timeout: 30000  // 30 second timeout
+      timeout: 120000  // Increased to 2 minutes for longer generation time
     });
 
-    console.log("Ollama response received:", response.data);
-    return response.data.response || "Analysis not available";
+    console.log("Received llama2 response:", response.data);
+    
+    if (!response.data || !response.data.response) {
+      throw new Error('Invalid response format from llama2');
+    }
+
+    // Clean up and format the response
+    let analysis = response.data.response
+      .replace(/\n{3,}/g, '\n\n')  // Remove extra newlines
+      .trim();
+
+    // Add section headers if they're missing
+    if (!analysis.includes('Striking Analysis')) {
+      analysis = `Fight Analysis:\n\n${analysis}`;
+    }
+
+    return analysis;
   } catch (error) {
-    console.error('Ollama error:', error);
-    // Return a default analysis if Ollama fails
-    return `Technical analysis based on stats: ${fighter1.name} vs ${fighter2.name}`;
+    console.error('llama2 error:', error);
+    return `AI analysis unavailable - ${error.message}`;
   }
 };
 
