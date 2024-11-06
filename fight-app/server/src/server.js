@@ -176,29 +176,37 @@ const OLLAMA_URL = process.env.OLLAMA_URL || "http://ollama:11434";
 // Add this function to call Ollama
 const getOllamaAnalysis = async (fighter1, fighter2, stats) => {
   try {
-    console.log("Testing Ollama connection...");
-    
-    // Test connection first
-    const testResponse = await axios.get(`${OLLAMA_URL}/api/tags`).catch(e => {
-      console.error('Ollama health check failed:', e);
-      throw new Error('Ollama service not available');
-    });
-
-    console.log("Ollama connection test response:", testResponse.data);
+    console.log("Starting Ollama analysis...");
 
     const response = await axios.post(`${OLLAMA_URL}/api/generate`, {
       model: "llama2:7b-chat",
-      prompt: `Analyze this UFC fight between ${fighter1.name} and ${fighter2.name}.
-      ${fighter1.name} Record: ${fighter1.wins}-${fighter1.losses}
-      ${fighter2.name} Record: ${fighter2.wins}-${fighter2.losses}
-      Who has the advantage?`,
-      stream: false
+      prompt: `Analyze this UFC fight briefly:
+      ${fighter1.name} (${fighter1.wins}-${fighter1.losses}) vs ${fighter2.name} (${fighter2.wins}-${fighter2.losses})
+      
+      Key stats for ${fighter1.name}:
+      - Strike Accuracy: ${fighter1.strikeAccuracy}%
+      - Takedown Accuracy: ${fighter1.takedownAccuracy}%
+      
+      Key stats for ${fighter2.name}:
+      - Strike Accuracy: ${fighter2.strikeAccuracy}%
+      - Takedown Accuracy: ${fighter2.takedownAccuracy}%
+      
+      Provide a short analysis focusing on who has the advantage.`,
+      stream: false,
+      options: {
+        temperature: 0.7,
+        max_tokens: 200  // Limit response length
+      }
+    }, {
+      timeout: 30000  // 30 second timeout
     });
 
-    return response.data.response;
+    console.log("Ollama response received:", response.data);
+    return response.data.response || "Analysis not available";
   } catch (error) {
     console.error('Ollama error:', error);
-    return `AI analysis unavailable - ${error.message}`;
+    // Return a default analysis if Ollama fails
+    return `Technical analysis based on stats: ${fighter1.name} vs ${fighter2.name}`;
   }
 };
 
@@ -390,57 +398,20 @@ app.post("/api/save-analysis", async (req, res) => {
 // Main prediction endpoint
 app.post("/api/predict", async (req, res) => {
   try {
-    console.log("Received request at /api/predict with data:", {
-      fighter1: req.body.fighter1,
-      fighter2: req.body.fighter2
-    });
+    console.log("Processing fight analysis...");
 
-    // 1. Database Check
-    try {
-      await pool.query('SELECT NOW()');
-      console.log("Database connection successful");
-    } catch (dbError) {
-      console.error("Database connection error:", dbError);
-      throw new Error(`Database connection failed: ${dbError.message}`);
-    }
+    // Save fighter data first
+    const [fighter1Id, fighter2Id] = await Promise.all([
+      saveFighterData(req.body.fighter1),
+      saveFighterData(req.body.fighter2)
+    ]);
 
-    // 2. Data Validation
-    if (!req.body.fighter1?.name || !req.body.fighter2?.name) {
-      throw new Error('Missing fighter names');
-    }
+    // Get both analysis results in parallel
+    const [outcomeAnalysis, aiAnalysis] = await Promise.all([
+      predictFightOutcome(req.body.fighter1, req.body.fighter2),
+      getOllamaAnalysis(req.body.fighter1, req.body.fighter2, "")
+    ]);
 
-    // 3. Save Fighter Data
-    let fighter1Id, fighter2Id;
-    try {
-      fighter1Id = await saveFighterData(req.body.fighter1);
-      fighter2Id = await saveFighterData(req.body.fighter2);
-      console.log("Saved fighters with IDs:", { fighter1Id, fighter2Id });
-    } catch (saveError) {
-      console.error("Error saving fighter data:", saveError);
-      throw new Error(`Failed to save fighter data: ${saveError.message}`);
-    }
-
-    // 4. Calculate Outcome
-    let outcomeAnalysis;
-    try {
-      outcomeAnalysis = predictFightOutcome(req.body.fighter1, req.body.fighter2);
-      console.log("Fight outcome calculated:", outcomeAnalysis);
-    } catch (outcomeError) {
-      console.error("Error calculating outcome:", outcomeError);
-      throw new Error(`Failed to calculate outcome: ${outcomeError.message}`);
-    }
-
-    // 5. Get AI Analysis
-    let aiAnalysis;
-    try {
-      aiAnalysis = await getOllamaAnalysis(req.body.fighter1, req.body.fighter2, "");
-      console.log("AI analysis received:", aiAnalysis);
-    } catch (aiError) {
-      console.error("Error getting AI analysis:", aiError);
-      aiAnalysis = "AI analysis unavailable - Error connecting to Ollama";
-    }
-
-    // 6. Send Response
     const response = {
       message: aiAnalysis,
       aiAnalysis: true,
@@ -448,26 +419,14 @@ app.post("/api/predict", async (req, res) => {
       fighter2Probability: outcomeAnalysis.prediction.winProbability?.fighter2 || "50.0",
       simulationConfidence: outcomeAnalysis.prediction.confidence || 80,
       suggestedBet: outcomeAnalysis.prediction.recommendedBet || 'No recommendation',
-      fightOutcome: outcomeAnalysis.prediction || {
-        goesToDistance: "Unknown",
-        finishProbability: 0,
-        recommendedBet: "No recommendation",
-        winProbability: { fighter1: "50.0", fighter2: "50.0" }
-      }
+      fightOutcome: outcomeAnalysis.prediction
     };
 
-    console.log("Sending response:", response);
     res.json(response);
-
   } catch (error) {
-    console.error('Error in /api/predict:', {
-      message: error.message,
-      stack: error.stack,
-      data: req.body
-    });
-    
+    console.error('Error in fight analysis:', error);
     res.status(500).json({
-      error: 'Failed to generate prediction',
+      error: 'Failed to analyze fight',
       details: error.message
     });
   }
