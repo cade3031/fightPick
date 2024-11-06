@@ -1,0 +1,21 @@
+version: '3.8'
+
+services:
+  frontend:
+    build:
+      target: production
+    environment:
+      - NODE_ENV=production
+    
+  backend:
+    build:
+      target: production
+    environment:
+      - NODE_ENV=production
+      - DATABASE_URL=${PROD_DATABASE_URL}
+    
+  db:
+    environment:
+      - POSTGRES_PASSWORD=${PROD_DB_PASSWORD}
+    volumes:
+      - /path/to/prod/data:/var/lib/postgresql/data 

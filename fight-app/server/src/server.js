@@ -3,14 +3,7 @@ const cors = require('cors');
 const app = express();
 const axios = require('axios');
 const { Pool } = require('pg');
-
-const pool = new Pool({
-  user: 'your_username',
-  host: 'localhost',
-  database: 'fightpick_db',
-  password: 'your_password',
-  port: 5432,
-});
+const pool = require('./config/db');
 
 // Add middleware
 app.use(cors());
@@ -170,95 +163,104 @@ const predictFightOutcome = (fighter1, fighter2) => {
   }
 };
 
-// Add this constant
-const OLLAMA_URL = process.env.OLLAMA_URL || "http://localhost:11434";
+// Update this constant
+const OLLAMA_URL = process.env.OLLAMA_URL || "http://ollama:11434";
 
 // Add this function to call Ollama
 const getOllamaAnalysis = async (fighter1, fighter2, stats) => {
   try {
-    console.log("Starting Ollama analysis for:", {
+    console.log("Starting llama2:7b-chat analysis for:", {
       fighter1: fighter1.name,
       fighter2: fighter2.name
     });
 
-    const prompt = `As a UFC fight analyst, analyze this matchup:
-
-    Fighter 1: ${fighter1.name}
-    Stats:
-    - Record: ${fighter1.wins}-${fighter1.losses}
-    - KO Rate: ${(fighter1.koWins/fighter1.wins * 100).toFixed(1)}%
-    - Submission Rate: ${(fighter1.subWins/fighter1.wins * 100).toFixed(1)}%
-    - Strike Accuracy: ${fighter1.strikeAccuracy}%
-    - Takedown Accuracy: ${fighter1.takedownAccuracy}%
-    - Takedown Defense: ${fighter1.takedownDefense}%
-    - Physical: Height ${fighter1.height}, Reach ${fighter1.reach}
-
-    Fighter 2: ${fighter2.name}
-    Stats:
-    - Record: ${fighter2.wins}-${fighter2.losses}
-    - KO Rate: ${(fighter2.koWins/fighter2.wins * 100).toFixed(1)}%
-    - Submission Rate: ${(fighter2.subWins/fighter2.wins * 100).toFixed(1)}%
-    - Strike Accuracy: ${fighter2.strikeAccuracy}%
-    - Takedown Accuracy: ${fighter2.takedownAccuracy}%
-    - Takedown Defense: ${fighter2.takedownDefense}%
-    - Physical: Height ${fighter2.height}, Reach ${fighter2.reach}
-
-    Additional Analysis:
-    ${stats}
-
-    Provide a detailed analysis including:
-    1. Who has the striking advantage and why
-    2. Who has the grappling advantage and why
-    3. Physical advantages and how they might be used
-    4. Most likely path to victory for each fighter
-    5. Prediction on fight outcome with confidence level
-    6. Betting recommendation based on the analysis
-
-    Format your response in clear sections.`;
-
-    console.log("Sending prompt to Ollama");
     const response = await axios.post(`${OLLAMA_URL}/api/generate`, {
-      model: "llama2",
-      prompt: prompt,
-      stream: false,
-      temperature: 0.7
+      model: "llama2:7b-chat",
+      prompt: `You are a UFC fight analyst. Analyze this fight between ${fighter1.name} and ${fighter2.name} based on their stats:
+
+${fighter1.name}:
+- Record: ${fighter1.wins}-${fighter1.losses}
+- KO Rate: ${((fighter1.koWins/fighter1.wins) * 100).toFixed(1)}%
+- Strike Accuracy: ${fighter1.strikeAccuracy}%
+- Takedown Accuracy: ${fighter1.takedownAccuracy}%
+
+${fighter2.name}:
+- Record: ${fighter2.wins}-${fighter2.losses}
+- KO Rate: ${((fighter2.koWins/fighter2.wins) * 100).toFixed(1)}%
+- Strike Accuracy: ${fighter2.strikeAccuracy}%
+- Takedown Accuracy: ${fighter2.takedownAccuracy}%
+
+Provide a brief analysis focusing on:
+1. Who has the striking advantage and why
+2. Who has the grappling advantage and why
+3. Most likely path to victory for each fighter
+4. Prediction with confidence level`,
+      stream: false
     });
 
-    console.log("Received Ollama response:", response.data.response);
+    console.log("Fight analysis response:", response.data);
+
+    if (!response.data || !response.data.response) {
+      throw new Error('Invalid response format');
+    }
+
     return response.data.response;
   } catch (error) {
-    console.error('Ollama error:', error);
-    console.error('Error details:', {
+    console.error('Ollama error:', {
       message: error.message,
-      response: error.response?.data
+      status: error.response?.status,
+      data: error.response?.data,
+      url: error.config?.url
     });
-    return 'AI analysis unavailable - Error: ' + error.message;
+    return `AI analysis unavailable - ${error.message}`;
   }
 };
 
-// Add this function to save fight analysis
-const saveFightAnalysis = async (fightData) => {
+// Add this function to save detailed fight analysis
+const saveFightAnalysis = async (analysisData) => {
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
     
     const insertQuery = `
       INSERT INTO fight_analyses (
-        fighter1_name, fighter2_name,
-        fighter1_stats, fighter2_stats,
-        prediction, betting_advice,
-        created_at
-      ) VALUES ($1, $2, $3, $4, $5, $6, NOW())
+        event_date,
+        fighter1_id,
+        fighter2_id,
+        fighter1_odds,
+        fighter2_odds,
+        distance_probability,
+        finish_probability,
+        likely_method,
+        confidence_level,
+        recommended_bet,
+        ai_analysis,
+        striking_advantage,
+        grappling_advantage,
+        physical_advantages,
+        win_probability_fighter1,
+        win_probability_fighter2
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)
       RETURNING id
     `;
     
     const values = [
-      fightData.fighter1.name,
-      fightData.fighter2.name,
-      JSON.stringify(fightData.fighter1),
-      JSON.stringify(fightData.fighter2),
-      JSON.stringify(fightData.prediction),
-      JSON.stringify(fightData.bettingAdvice)
+      analysisData.eventDate,
+      analysisData.fighter1Id,
+      analysisData.fighter2Id,
+      analysisData.fighter1Odds,
+      analysisData.fighter2Odds,
+      analysisData.distanceProbability,
+      analysisData.finishProbability,
+      analysisData.likelyMethod,
+      analysisData.confidenceLevel,
+      analysisData.recommendedBet,
+      analysisData.aiAnalysis,
+      analysisData.strikingAdvantage,
+      analysisData.grapplingAdvantage,
+      analysisData.physicalAdvantages,
+      analysisData.winProbabilityFighter1,
+      analysisData.winProbabilityFighter2
     ];
 
     const result = await client.query(insertQuery, values);
@@ -288,29 +290,39 @@ const saveFighterData = async (fighterData) => {
       // Update existing fighter
       const updateQuery = `
         UPDATE fighters SET
-          age = $1, height = $2, reach = $3,
-          world_ranking = $4, wins = $5, losses = $6,
-          ko_wins = $7, sub_wins = $8, decision_wins = $9,
-          strike_accuracy = $10, takedown_accuracy = $11,
-          takedown_defense = $12, last_updated = NOW()
+          age = $1,
+          height = $2,
+          reach = $3,
+          world_ranking = $4,
+          wins = $5,
+          losses = $6,
+          ko_wins = $7,
+          sub_wins = $8,
+          decision_wins = $9,
+          strike_accuracy = $10,
+          takedown_accuracy = $11,
+          takedown_defense = $12,
+          last_updated = NOW()
         WHERE name = $13
         RETURNING id
       `;
+      
       const values = [
-        fighterData.age,
-        fighterData.height,
-        fighterData.reach,
-        fighterData.worldRanking,
-        fighterData.wins,
-        fighterData.losses,
-        fighterData.koWins,
-        fighterData.subWins,
-        fighterData.decisionWins,
-        fighterData.strikeAccuracy,
-        fighterData.takedownAccuracy,
-        fighterData.takedownDefense,
+        parseInt(fighterData.age) || 0,
+        parseInt(fighterData.height) || 0,
+        parseInt(fighterData.reach) || 0,
+        parseInt(fighterData.worldRanking) || 0,
+        parseInt(fighterData.wins) || 0,
+        parseInt(fighterData.losses) || 0,
+        parseInt(fighterData.koWins) || 0,
+        parseInt(fighterData.subWins) || 0,
+        parseInt(fighterData.decisionWins) || 0,
+        parseFloat(fighterData.strikeAccuracy) || 0,
+        parseFloat(fighterData.takedownAccuracy) || 0,
+        parseFloat(fighterData.takedownDefense) || 0,
         fighterData.name
       ];
+
       const result = await client.query(updateQuery, values);
       await client.query('COMMIT');
       return result.rows[0].id;
@@ -324,27 +336,30 @@ const saveFighterData = async (fighterData) => {
         ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
         RETURNING id
       `;
+      
       const values = [
         fighterData.name,
-        fighterData.age,
-        fighterData.height,
-        fighterData.reach,
-        fighterData.worldRanking,
-        fighterData.wins,
-        fighterData.losses,
-        fighterData.koWins,
-        fighterData.subWins,
-        fighterData.decisionWins,
-        fighterData.strikeAccuracy,
-        fighterData.takedownAccuracy,
-        fighterData.takedownDefense
+        parseInt(fighterData.age) || 0,
+        parseInt(fighterData.height) || 0,
+        parseInt(fighterData.reach) || 0,
+        parseInt(fighterData.worldRanking) || 0,
+        parseInt(fighterData.wins) || 0,
+        parseInt(fighterData.losses) || 0,
+        parseInt(fighterData.koWins) || 0,
+        parseInt(fighterData.subWins) || 0,
+        parseInt(fighterData.decisionWins) || 0,
+        parseFloat(fighterData.strikeAccuracy) || 0,
+        parseFloat(fighterData.takedownAccuracy) || 0,
+        parseFloat(fighterData.takedownDefense) || 0
       ];
+
       const result = await client.query(insertQuery, values);
       await client.query('COMMIT');
       return result.rows[0].id;
     }
   } catch (error) {
     await client.query('ROLLBACK');
+    console.error('Error in saveFighterData:', error);
     throw error;
   } finally {
     client.release();
@@ -389,104 +404,253 @@ app.post("/api/save-analysis", async (req, res) => {
 // Main prediction endpoint
 app.post("/api/predict", async (req, res) => {
   try {
-    const { fighter1, fighter2 } = req.body;
-    
-    // Add detailed logging
-    console.log("Processing fight analysis for:");
-    console.log("Fighter 1:", {
-      name: fighter1.name,
-      record: `${fighter1.wins}-${fighter1.losses}`,
-      koRate: (parseInt(fighter1.koWins) / parseInt(fighter1.wins) * 100).toFixed(1) + '%',
-      subRate: (parseInt(fighter1.subWins) / parseInt(fighter1.wins) * 100).toFixed(1) + '%'
-    });
-    console.log("Fighter 2:", {
-      name: fighter2.name,
-      record: `${fighter2.wins}-${fighter2.losses}`,
-      koRate: (parseInt(fighter2.koWins) / parseInt(fighter2.wins) * 100).toFixed(1) + '%',
-      subRate: (parseInt(fighter2.subWins) / parseInt(fighter2.wins) * 100).toFixed(1) + '%'
+    console.log("Received request at /api/predict with data:", {
+      fighter1: req.body.fighter1,
+      fighter2: req.body.fighter2
     });
 
-    // Add data validation
-    if (!fighter1.wins || !fighter2.wins) {
-      throw new Error('Missing critical fighter statistics');
+    // 1. Database Check
+    try {
+      await pool.query('SELECT NOW()');
+      console.log("Database connection successful");
+    } catch (dbError) {
+      console.error("Database connection error:", dbError);
+      throw new Error(`Database connection failed: ${dbError.message}`);
     }
 
-    // Calculate all stats once
-    const fighter1Style = analyzeFightingStyle(fighter1);
-    const fighter2Style = analyzeFightingStyle(fighter2);
-    const advantages = calculateAdvantages(fighter1, fighter2);
-    const fighter1Stats = calculateWinRate(fighter1);
-    const fighter2Stats = calculateWinRate(fighter2);
-    const fighter1GrapplingAdvantage = analyzeGrapplingAdvantage(fighter1, fighter2);
-    const fighter2GrapplingAdvantage = analyzeGrapplingAdvantage(fighter2, fighter1);
+    // 2. Data Validation
+    if (!req.body.fighter1?.name || !req.body.fighter2?.name) {
+      throw new Error('Missing fighter names');
+    }
 
-    // Calculate fight outcome
-    const outcomeAnalysis = predictFightOutcome(fighter1, fighter2);
+    // 3. Save Fighter Data
+    let fighter1Id, fighter2Id;
+    try {
+      fighter1Id = await saveFighterData(req.body.fighter1);
+      fighter2Id = await saveFighterData(req.body.fighter2);
+      console.log("Saved fighters with IDs:", { fighter1Id, fighter2Id });
+    } catch (saveError) {
+      console.error("Error saving fighter data:", saveError);
+      throw new Error(`Failed to save fighter data: ${saveError.message}`);
+    }
 
-    // Create analysis string
-    const analysis = `Fight Analysis: ${fighter1.name} vs ${fighter2.name}\n\n` +
-      `Style Matchup:\n` +
-      `${fighter1.name} (${fighter1Style}):\n` +
-      `- Record: ${fighter1.wins}-${fighter1.losses}\n` +
-      `- KO Wins: ${fighter1.koWins}\n` +
-      `- Submission Wins: ${fighter1.subWins}\n` +
-      `- Strike Accuracy: ${fighter1.strikeAccuracy}%\n` +
-      `- Takedown Accuracy: ${fighter1.takedownAccuracy}%\n` +
-      `- Takedown Defense: ${fighter1.takedownDefense}%\n` +
-      `- Win Rate: ${fighter1Stats.winRate.toFixed(1)}%\n` +
-      `- Grappling Analysis: ${fighter1GrapplingAdvantage}\n\n` +
-      `${fighter2.name} (${fighter2Style}):\n` +
-      `- Record: ${fighter2.wins}-${fighter2.losses}\n` +
-      `- KO Wins: ${fighter2.koWins}\n` +
-      `- Submission Wins: ${fighter2.subWins}\n` +
-      `- Strike Accuracy: ${fighter2.strikeAccuracy}%\n` +
-      `- Takedown Accuracy: ${fighter2.takedownAccuracy}%\n` +
-      `- Takedown Defense: ${fighter2.takedownDefense}%\n` +
-      `- Win Rate: ${fighter2Stats.winRate.toFixed(1)}%\n` +
-      `- Grappling Analysis: ${fighter2GrapplingAdvantage}\n\n` +
-      `Fight Outcome Analysis:\n` +
-      `- Safe Bet Recommendation: ${outcomeAnalysis.prediction.recommendedBet}\n` +
-      `- Win Probability: ${fighter1.name}: ${fighter1Stats.winRate.toFixed(1)}% | ${fighter2.name}: ${fighter2Stats.winRate.toFixed(1)}%\n` +
-      `- Distance Probability: ${outcomeAnalysis.prediction.goesToDistance} (${(100 - outcomeAnalysis.prediction.finishProbability).toFixed(1)}%)\n` +
-      `- Finish Probability: ${outcomeAnalysis.prediction.finishProbability.toFixed(1)}%\n` +
-      `${outcomeAnalysis.prediction.likelyMethod ? `- Most Likely Method: ${outcomeAnalysis.prediction.likelyMethod} (${outcomeAnalysis.prediction.confidence.toFixed(1)}% confidence)` : ''}`;
+    // 4. Calculate Outcome
+    let outcomeAnalysis;
+    try {
+      outcomeAnalysis = predictFightOutcome(req.body.fighter1, req.body.fighter2);
+      console.log("Fight outcome calculated:", outcomeAnalysis);
+    } catch (outcomeError) {
+      console.error("Error calculating outcome:", outcomeError);
+      throw new Error(`Failed to calculate outcome: ${outcomeError.message}`);
+    }
 
-    // Get AI analysis from Ollama
-    const aiAnalysis = await getOllamaAnalysis(fighter1, fighter2, 
-      `Style Matchup: ${fighter1Style} vs ${fighter2Style}\n` +
-      `Physical Advantages: ${JSON.stringify(advantages)}\n` +
-      `Grappling Analysis: ${fighter1GrapplingAdvantage} vs ${fighter2GrapplingAdvantage}`
-    );
+    // 5. Get AI Analysis
+    let aiAnalysis;
+    try {
+      aiAnalysis = await getOllamaAnalysis(req.body.fighter1, req.body.fighter2, "");
+      console.log("AI analysis received:", aiAnalysis);
+    } catch (aiError) {
+      console.error("Error getting AI analysis:", aiError);
+      aiAnalysis = "AI analysis unavailable - Error connecting to Ollama";
+    }
 
-    console.log("AI Analysis received:", aiAnalysis);
-
-    // Include AI analysis in response
-    res.json({
-      message: aiAnalysis,  // This will be the Ollama analysis
+    // 6. Send Response
+    const response = {
+      message: aiAnalysis,
       aiAnalysis: true,
-      fighter1Probability: fighter1Stats.winRate,
-      fighter2Probability: fighter2Stats.winRate,
-      simulationConfidence: 80,
-      suggestedBet: fighter1Stats.winRate > fighter2Stats.winRate ? fighter1.name : fighter2.name,
-      bettingAdvice: {
-        fighter1: {
-          kellyBet: (fighter1Stats.winRate > fighter2Stats.winRate ? 2.5 : 1.5).toFixed(1),
-          expectedValue: (fighter1Stats.winRate/100 - 0.5).toFixed(3)
-        },
-        fighter2: {
-          kellyBet: (fighter2Stats.winRate > fighter1Stats.winRate ? 2.5 : 1.5).toFixed(1),
-          expectedValue: (fighter2Stats.winRate/100 - 0.5).toFixed(3)
-        }
-      },
-      fightOutcome: outcomeAnalysis.prediction
-    });
+      fighter1Probability: outcomeAnalysis.prediction.winProbability?.fighter1 || "50.0",
+      fighter2Probability: outcomeAnalysis.prediction.winProbability?.fighter2 || "50.0",
+      simulationConfidence: outcomeAnalysis.prediction.confidence || 80,
+      suggestedBet: outcomeAnalysis.prediction.recommendedBet || 'No recommendation',
+      fightOutcome: outcomeAnalysis.prediction || {
+        goesToDistance: "Unknown",
+        finishProbability: 0,
+        recommendedBet: "No recommendation",
+        winProbability: { fighter1: "50.0", fighter2: "50.0" }
+      }
+    };
+
+    console.log("Sending response:", response);
+    res.json(response);
 
   } catch (error) {
-    console.error('Error in prediction:', error);
-    res.status(500).json({ 
-      error: 'Failed to generate prediction',
-      details: error.message 
+    console.error('Error in /api/predict:', {
+      message: error.message,
+      stack: error.stack,
+      data: req.body
     });
+    
+    res.status(500).json({
+      error: 'Failed to generate prediction',
+      details: error.message
+    });
+  }
+});
+
+// Save fight analysis
+app.post('/api/save-analysis', async (req, res) => {
+  try {
+    const { fighters, prediction } = req.body;
+    
+    const result = await pool.query(
+      'INSERT INTO analyzed_fights (fighter1_data, fighter2_data, prediction_data) VALUES ($1, $2, $3) RETURNING *',
+      [fighters.fighter1, fighters.fighter2, prediction]
+    );
+    
+    res.json(result.rows[0]);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Get all analyzed fights
+app.get('/api/analyzed-fights', async (req, res) => {
+  try {
+    const result = await pool.query('SELECT * FROM analyzed_fights ORDER BY timestamp DESC');
+    res.json(result.rows);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Add these functions after your existing functions
+
+// Create a new parlay
+const createParlay = async (userId, parlayName, stake) => {
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    
+    const insertQuery = `
+      INSERT INTO parlays (user_id, parlay_name, stake)
+      VALUES ($1, $2, $3)
+      RETURNING id
+    `;
+    
+    const result = await client.query(insertQuery, [userId, parlayName, stake]);
+    await client.query('COMMIT');
+    return result.rows[0].id;
+  } catch (error) {
+    await client.query('ROLLBACK');
+    throw error;
+  } finally {
+    client.release();
+  }
+};
+
+// Add a fight to a parlay
+const addFightToParlay = async (parlayId, fighter1Id, fighter2Id, selectedFighterId, odds, fightDate) => {
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    
+    const insertQuery = `
+      INSERT INTO parlay_fights (
+        parlay_id, fighter1_id, fighter2_id, 
+        selected_fighter_id, odds, fight_date
+      )
+      VALUES ($1, $2, $3, $4, $5, $6)
+      RETURNING id
+    `;
+    
+    const result = await client.query(insertQuery, [
+      parlayId, fighter1Id, fighter2Id, 
+      selectedFighterId, odds, fightDate
+    ]);
+
+    // Update total odds in parlay
+    await client.query(`
+      UPDATE parlays 
+      SET total_odds = (
+        SELECT COALESCE(PRODUCT(odds), 1)
+        FROM parlay_fights
+        WHERE parlay_id = $1
+      )
+      WHERE id = $1
+    `, [parlayId]);
+
+    await client.query('COMMIT');
+    return result.rows[0].id;
+  } catch (error) {
+    await client.query('ROLLBACK');
+    throw error;
+  } finally {
+    client.release();
+  }
+};
+
+// Add these endpoints
+
+// Create new parlay
+app.post("/api/parlays", async (req, res) => {
+  try {
+    const { userId, parlayName, stake } = req.body;
+    const parlayId = await createParlay(userId, parlayName, stake);
+    res.json({ success: true, parlayId });
+  } catch (error) {
+    console.error('Error creating parlay:', error);
+    res.status(500).json({ error: 'Failed to create parlay' });
+  }
+});
+
+// Add fight to parlay
+app.post("/api/parlays/:parlayId/fights", async (req, res) => {
+  try {
+    const { parlayId } = req.params;
+    const { fighter1Id, fighter2Id, selectedFighterId, odds, fightDate } = req.body;
+    
+    const fightId = await addFightToParlay(
+      parlayId, 
+      fighter1Id, 
+      fighter2Id, 
+      selectedFighterId, 
+      odds, 
+      fightDate
+    );
+    
+    res.json({ success: true, fightId });
+  } catch (error) {
+    console.error('Error adding fight to parlay:', error);
+    res.status(500).json({ error: 'Failed to add fight to parlay' });
+  }
+});
+
+// Get parlay details
+app.get("/api/parlays/:parlayId", async (req, res) => {
+  const client = await pool.connect();
+  try {
+    const { parlayId } = req.params;
+    
+    const parlayResult = await client.query(`
+      SELECT p.*, 
+        json_agg(json_build_object(
+          'fightId', pf.id,
+          'fighter1', f1.name,
+          'fighter2', f2.name,
+          'selectedFighter', f3.name,
+          'odds', pf.odds,
+          'fightDate', pf.fight_date,
+          'status', pf.status
+        )) as fights
+      FROM parlays p
+      LEFT JOIN parlay_fights pf ON p.id = pf.parlay_id
+      LEFT JOIN fighters f1 ON pf.fighter1_id = f1.id
+      LEFT JOIN fighters f2 ON pf.fighter2_id = f2.id
+      LEFT JOIN fighters f3 ON pf.selected_fighter_id = f3.id
+      WHERE p.id = $1
+      GROUP BY p.id
+    `, [parlayId]);
+
+    if (parlayResult.rows.length === 0) {
+      return res.status(404).json({ error: 'Parlay not found' });
+    }
+
+    res.json(parlayResult.rows[0]);
+  } catch (error) {
+    console.error('Error fetching parlay:', error);
+    res.status(500).json({ error: 'Failed to fetch parlay details' });
+  } finally {
+    client.release();
   }
 });
 
@@ -495,3 +659,21 @@ app.listen(PORT, '0.0.0.0', () => {
   console.log(`Server running on port ${PORT}`);
   console.log(`Server URL: http://localhost:${PORT}`);
 });
+
+// Add this function
+const validateFighterData = (fighter) => {
+  if (!fighter.name) return false;
+  
+  // Convert strings to numbers and provide defaults
+  return {
+    ...fighter,
+    wins: parseInt(fighter.wins) || 0,
+    losses: parseInt(fighter.losses) || 0,
+    koWins: parseInt(fighter.koWins) || 0,
+    subWins: parseInt(fighter.subWins) || 0,
+    decisionWins: parseInt(fighter.decisionWins) || 0,
+    strikeAccuracy: parseFloat(fighter.strikeAccuracy) || 0,
+    takedownAccuracy: parseFloat(fighter.takedownAccuracy) || 0,
+    takedownDefense: parseFloat(fighter.takedownDefense) || 0
+  };
+};

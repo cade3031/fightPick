@@ -4,24 +4,32 @@ import './UFC.css';
 // Replace YOUR_TAILSCALE_IP with your actual Tailscale IP address
 const API_URL = 'http://localhost:8080';  // Make sure port matches your server
 
+const defaultFightOutcome = {
+  goesToDistance: "Unknown",
+  finishProbability: 0,
+  recommendedBet: "No recommendation",
+  winProbability: {
+    fighter1: "0.0",
+    fighter2: "0.0"
+  }
+};
+
 function UFC() {
-  const [betslipData, setBetslipData] = useState(null); // state for betslip data
   const [fightCardData, setFightCardData] = useState(null); // state for fight card data
-  const [seedData, setSeedData] = useState(null); // Add state for seedData
-  const [error, setError] = useState(null);
   const [selectedFight, setSelectedFight] = useState(null);
   const [prediction, setPrediction] = useState(null);
-  const [isLoading, setIsLoading] = useState(false);
-  const [simulationProgress, setSimulationProgress] = useState(0);
-  const [isSimulating, setIsSimulating] = useState(false);
   const [showPopup, setShowPopup] = useState(false);
   const [ollamaResponse, setOllamaResponse] = useState('');
   const [analyzedFights, setAnalyzedFights] = useState(new Set());
   const [isInputMode, setIsInputMode] = useState(true);
-  const [selectedParlay, setSelectedParlay] = useState(null);
   const [analyzedFightsData, setAnalyzedFightsData] = useState([]);
   const [showParlayDropdown, setShowParlayDropdown] = useState(false);
   const [parlayRecommendation, setParlayRecommendation] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [selectedParlay, setSelectedParlay] = useState(null);
+  const [seedData, setSeedData] = useState(null);
+  const [isSimulating, setIsSimulating] = useState(false);
 
   const handleInputChange = (e, fighter, field) => {
     const { value } = e.target;
@@ -36,90 +44,69 @@ function UFC() {
 
   const handleSubmitFighterData = async (e) => {
     e.preventDefault();
+    const fighterData = {
+      fighter1: {
+        ...selectedFight.fighter1,
+        wins: parseInt(selectedFight.fighter1.wins) || 0,
+        losses: parseInt(selectedFight.fighter1.losses) || 0,
+        koWins: parseInt(selectedFight.fighter1.koWins) || 0,
+        subWins: parseInt(selectedFight.fighter1.subWins) || 0,
+        decisionWins: parseInt(selectedFight.fighter1.decisionWins) || 0,
+        strikeAccuracy: parseFloat(selectedFight.fighter1.strikeAccuracy) || 0,
+        takedownAccuracy: parseFloat(selectedFight.fighter1.takedownAccuracy) || 0,
+        takedownDefense: parseFloat(selectedFight.fighter1.takedownDefense) || 0
+      },
+      fighter2: {
+        ...selectedFight.fighter2,
+        wins: parseInt(selectedFight.fighter2.wins) || 0,
+        losses: parseInt(selectedFight.fighter2.losses) || 0,
+        koWins: parseInt(selectedFight.fighter2.koWins) || 0,
+        subWins: parseInt(selectedFight.fighter2.subWins) || 0,
+        decisionWins: parseInt(selectedFight.fighter2.decisionWins) || 0,
+        strikeAccuracy: parseFloat(selectedFight.fighter2.strikeAccuracy) || 0,
+        takedownAccuracy: parseFloat(selectedFight.fighter2.takedownAccuracy) || 0,
+        takedownDefense: parseFloat(selectedFight.fighter2.takedownDefense) || 0
+      }
+    };
+    
     try {
       const response = await fetch(`${API_URL}/api/predict`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          fighter1: selectedFight.fighter1,
-          fighter2: selectedFight.fighter2
-        })
+        body: JSON.stringify(fighterData)
       });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
 
       const data = await response.json();
-      setPrediction(data);
-      setOllamaResponse(data.message);
+      console.log("Received analysis:", data);
       
-      // Save to database
-      const saveResponse = await fetch(`${API_URL}/api/save-analysis`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          fighters: selectedFight,
-          prediction: data,
-          fightOutcome: data.fightOutcome,
-          bettingAdvice: data.bettingAdvice
-        })
+      setPrediction({
+        ...data,
+        fighter1Probability: data.fighter1Probability || '0.0',
+        fighter2Probability: data.fighter2Probability || '0.0',
+        simulationConfidence: data.simulationConfidence || 80,
+        suggestedBet: data.suggestedBet || 'No recommendation',
+        fightOutcome: data.fightOutcome || defaultFightOutcome,
+        bettingAdvice: data.bettingAdvice || {
+          fighter1: { kellyBet: '0.0', expectedValue: '0.0' },
+          fighter2: { kellyBet: '0.0', expectedValue: '0.0' }
+        }
       });
-
-      if (!saveResponse.ok) {
-        console.error('Failed to save fight analysis');
-      }
       
-      // Update local state
-      setAnalyzedFightsData(prev => [...prev, {
-        fighters: selectedFight,
-        prediction: data,
-        fightOutcome: data.fightOutcome,
-        bettingAdvice: data.bettingAdvice
-      }]);
-      
+      setOllamaResponse(data.message || 'No AI analysis available');
       setIsInputMode(false);
     } catch (error) {
-      console.error('Error analyzing fight:', error);
+      console.error('Error submitting fighter data:', error);
       alert('Error analyzing fight data: ' + error.message);
     }
   };
 
   useEffect(() => {
-    const fetchBetslipData = async () => {
-      try {
-        const response = await fetch(
-          'https://services.bovada.lv/services/sports/bet/betslip?outcomeId=A:1738983871:1&outcomeId=A:1750044571:2&outcomeId=A:1750044572:3&outcomeId=A:1730728345:4&outcomeId=A:1738913866:5'
-        );
-        const data = await response.json(); // Parse the response as JSON
-        console.log('Raw JSON data fetched:', data);
-
-        // Extract selections and bets from the JSON response
-        const selections = data.selections.selection.map(selection => ({
-          id: selection.id || '',
-          outcomeId: selection.outcomeId || '',
-          marketID: selection.marketId || '',
-          priceID: selection.priceId || '',
-          system: selection.system || '',
-          price: selection.price || '',
-          points: selection.points || ''
-        }));
-
-        const bets = data.bets.bet.map(bet => ({
-          id: bet.id || '',
-          betType: bet.betType || '',
-          price: bet.price || '',
-          description: bet.description || '',
-          americanOdds: bet.totalPriceFormattedMap?.AMERICAN || ''
-        }));
-
-        setBetslipData({ selections, bets });
-      } catch (err) {
-        console.error(err);
-        setError('An error occurred while fetching data. Please try again later.');
-      }
-    };
-
     const fetchFightCard = async () => {
       try {
         const response = await fetch(
@@ -145,50 +132,9 @@ function UFC() {
       }
     };
 
-    fetchBetslipData();
     fetchFightCard();
     fetchSeedData();
   }, []);
-
-  const getPrediction = async (fighter1, fighter2) => {
-    setIsLoading(true);
-    setIsSimulating(true);
-    setSimulationProgress(0);
-    
-    try {
-      console.log('Sending request to:', `${API_URL}/api/predict`);
-      const response = await fetch(`${API_URL}/api/predict`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json'
-        },
-        body: JSON.stringify({
-          fighter1,
-          fighter2,
-          odds1: fighter1.odds,
-          odds2: fighter2.odds
-        })
-      });
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      const data = await response.json();
-      console.log('Received response:', data);
-      setPrediction(data);
-      setOllamaResponse(data.message);
-      setShowPopup(true);
-    } catch (err) {
-      console.error('Detailed prediction error:', err);
-      console.error('Network status:', navigator.onLine);
-      setError('Failed to get prediction: ' + err.message);
-    } finally {
-      setIsLoading(false);
-      setIsSimulating(false);
-    }
-  };
 
   const handleFightClick = (event, competitors) => {
     if (!handleAnalyzeFight(event, competitors)) {
@@ -242,15 +188,15 @@ function UFC() {
     setIsInputMode(true);
   };
 
-  const handleAnalyzeFight = (event, name) => {
-    const fighter1 = event.competitors[0].name; //creates a variable for the first fighter
-    const fighter2 = event.competitors[1].name; //creates a variable for the second fighter
-    const fightId = `${fighter1}-${fighter2}`; //creates a variable for the fight id
-    if (analyzedFights.has(fightId)) { //checks if the fight id has been clicked
+  const handleAnalyzeFight = (event) => {
+    const fighter1 = event.competitors[0].name;
+    const fighter2 = event.competitors[1].name;
+    const fightId = `${fighter1}-${fighter2}`;
+    if (analyzedFights.has(fightId)) {
       return false;
     } 
-      setAnalyzedFights(prev => new Set([...prev, fightId])); //adds the fight id to the set
-      return true;
+    setAnalyzedFights(prev => new Set([...prev, fightId]));
+    return true;
   };
 
   const handleParlaySelect = (size) => {
@@ -292,79 +238,50 @@ function UFC() {
     }
   };
 
-  const calculateParlayEV = (fights) => {
-    try {
-      if (!fights || fights.length === 0) return 0;
-      
-      const totalOdds = calculateParlayOdds(fights);
-      const confidence = calculateParlayConfidence(fights);
-      return ((confidence/100 * totalOdds) - 1).toFixed(3);
-    } catch (error) {
-      console.error('Error calculating parlay EV:', error);
-      return 0;
-    }
-  };
-
   const generateParlay = (size) => {
-    console.log('Current analyzedFightsData:', analyzedFightsData);
     if (!analyzedFightsData || analyzedFightsData.length === 0) {
-      console.log('No analyzed fights available for parlay');
       alert('Please analyze some fights first before generating a parlay');
       return;
     }
 
-    console.log('Generating parlay with data:', analyzedFightsData);
-
-    const allBets = analyzedFightsData
-      .filter(fight => fight && fight.prediction)
-      .map(fight => {
-        const bets = [];
-
-        if (fight.prediction?.suggestedBet) {
-          const winnerBet = {
-            type: 'Winner',
-            fighter: fight.prediction.suggestedBet,
-            odds: fight.prediction.bettingAdvice?.[
-              fight.prediction.suggestedBet.toLowerCase().includes(fight.fighters.fighter1.name.toLowerCase()) 
-                ? 'fighter1' 
-                : 'fighter2'
-            ]?.expectedValue || 0,
-            confidence: fight.prediction.simulationConfidence || 0,
-            description: `${fight.prediction.suggestedBet} to win`
-          };
-          bets.push(winnerBet);
-        }
-
-        if (fight.fightOutcome?.confidence > 70) {
-          bets.push({
-            type: 'Method',
-            description: fight.fightOutcome.recommendedBet || 'Method unknown',
-            odds: (fight.fightOutcome.finishProbability || 0) / 100,
-            confidence: fight.fightOutcome.confidence || 0,
-            methodType: fight.fightOutcome.likelyMethod
-          });
-        }
-
-        return bets;
-      }).flat();
-
-    const sortedBets = allBets.sort((a, b) => {
-      const aValue = a.confidence * parseFloat(a.odds);
-      const bValue = b.confidence * parseFloat(b.odds);
-      return bValue - aValue;
+    const sortedFights = [...analyzedFightsData].sort((a, b) => {
+      const aConfidence = a?.prediction?.simulationConfidence || 0;
+      const bConfidence = b?.prediction?.simulationConfidence || 0;
+      return bConfidence - aConfidence;
     });
 
-    const selectedBets = sortedBets.slice(0, size);
-
+    const selectedFights = sortedFights.slice(0, size);
+    
     const parlayAnalysis = {
-      bets: selectedBets,
-      totalOdds: calculateParlayOdds(selectedBets),
-      confidence: calculateParlayConfidence(selectedBets),
-      expectedValue: calculateParlayEV(selectedBets)
+      fights: selectedFights,
+      confidence: calculateParlayConfidence(selectedFights),
+      suggestedBets: selectedFights.map(fight => ({
+        fighter: fight?.prediction?.suggestedBet || 'Unknown',
+        confidence: fight?.prediction?.simulationConfidence || 0,
+        odds: fight?.prediction?.bettingAdvice?.fighter1?.expectedValue || 0
+      }))
     };
 
     setParlayRecommendation(parlayAnalysis);
   };
+
+  // Load analyzed fights from database on component mount
+  useEffect(() => {
+    const loadAnalyzedFights = async () => {
+      try {
+        const response = await fetch(`${API_URL}/api/analyzed-fights`);
+        if (!response.ok) throw new Error('Failed to fetch analyzed fights');
+        const data = await response.json();
+        setAnalyzedFightsData(data);
+      } catch (error) {
+        console.error('Error loading analyzed fights:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadAnalyzedFights();
+  }, []);
 
   return (
     <div id="fight-card-data">
@@ -790,6 +707,79 @@ function UFC() {
             <p className="parlay-advice">
               Recommended Bet Size: {Math.min(parlayRecommendation.confidence/100 * 2, 5).toFixed(1)}% of bankroll
             </p>
+          </div>
+        </div>
+      )}
+      <div className="analyzed-fights-section">
+        <h3>Analyzed Fights ({analyzedFightsData.length})</h3>
+        <div className="parlay-controls">
+          <button onClick={() => generateParlay(2)}>Generate 2-Fight Parlay</button>
+          <button onClick={() => generateParlay(3)}>Generate 3-Fight Parlay</button>
+          <button onClick={() => generateParlay(4)}>Generate 4-Fight Parlay</button>
+        </div>
+        
+        {parlayRecommendation && (
+          <div className="parlay-recommendation">
+            <h4>Recommended Parlay</h4>
+            <p>Overall Confidence: {(parlayRecommendation.confidence || 0).toFixed(2)}%</p>
+            <div className="parlay-fights">
+              {parlayRecommendation.suggestedBets.map((bet, index) => (
+                <div key={index} className="parlay-fight">
+                  <p>Fight {index + 1}: {bet?.fighter || 'Unknown'}</p>
+                  <p>Confidence: {bet?.confidence || 0}%</p>
+                  <p>Expected Value: {bet?.odds || 0}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+      {!isInputMode && (
+        <div className="analysis-container">
+          <h3>Mistral Fight Analysis</h3>
+          <div className="mistral-analysis">
+            {ollamaResponse.split('\n').map((line, index) => (
+              <p key={index}>{line}</p>
+            ))}
+          </div>
+          
+          <div className="statistical-analysis">
+            <h4>Statistical Breakdown</h4>
+            {prediction && (
+              <>
+                <div className="prediction-details">
+                  <div className="fighter-prediction">
+                    <strong>{selectedFight.fighter1.name}</strong>
+                    <p>Win Probability: {prediction.fighter1Probability}%</p>
+                    <div className="betting-metrics">
+                      <p>Kelly Criterion: {prediction.bettingAdvice.fighter1.kellyBet}%</p>
+                      <p>Expected Value: {prediction.bettingAdvice.fighter1.expectedValue}</p>
+                    </div>
+                  </div>
+                  
+                  <div className="fighter-prediction">
+                    <strong>{selectedFight.fighter2.name}</strong>
+                    <p>Win Probability: {prediction.fighter2Probability}%</p>
+                    <div className="betting-metrics">
+                      <p>Kelly Criterion: {prediction.bettingAdvice.fighter2.kellyBet}%</p>
+                      <p>Expected Value: {prediction.bettingAdvice.fighter2.expectedValue}</p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="fight-outcome-analysis">
+                  <h4>Fight Outcome Analysis</h4>
+                  <p>Safe Bet: {prediction.fightOutcome?.recommendedBet}</p>
+                  <p>Distance Probability: {prediction.fightOutcome?.goesToDistance} 
+                     ({(100 - prediction.fightOutcome?.finishProbability).toFixed(1)}%)</p>
+                  <p>Finish Probability: {prediction.fightOutcome?.finishProbability.toFixed(1)}%</p>
+                  {prediction.fightOutcome?.likelyMethod && (
+                    <p>Most Likely Method: {prediction.fightOutcome.likelyMethod} 
+                       ({prediction.fightOutcome.confidence}% confidence)</p>
+                  )}
+                </div>
+              </>
+            )}
           </div>
         </div>
       )}

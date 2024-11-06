@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import UFC from './UFC';
 import Navbar from './Navbar';
@@ -8,8 +8,6 @@ import Football from './pages/Football';
 import Events from './pages/Events';
 
 function App() {
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-
   return (
     <Router>
       <div>

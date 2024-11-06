@@ -30,3 +30,8 @@ to start ollana run
     ollama run llama2 
  
     
+
+to run the whole app in docker container 
+
+run docker-compose up 
+

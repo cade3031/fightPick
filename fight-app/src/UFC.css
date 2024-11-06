@@ -831,3 +831,50 @@
     margin-bottom: 5px;
   }
 }
+
+.analyzed-fights-section {
+  margin: 20px;
+  padding: 20px;
+  background: #f5f5f5;
+  border-radius: 8px;
+}
+
+.parlay-controls {
+  display: flex;
+  gap: 10px;
+  margin: 15px 0;
+}
+
+.parlay-controls button {
+  padding: 8px 16px;
+  background: #2c3e50;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.parlay-controls button:hover {
+  background: #34495e;
+}
+
+.parlay-recommendation {
+  margin-top: 20px;
+  padding: 15px;
+  background: white;
+  border-radius: 6px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.parlay-fights {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.parlay-fight {
+  padding: 10px;
+  background: #f8f9fa;
+  border-radius: 4px;
+}
