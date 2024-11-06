@@ -143,15 +143,16 @@ app.post("/api/predict", async (req, res) => {
     try {
       await client.query('BEGIN');  // Start transaction
 
-      // Save both fighters
-      const fighter1Query = `
-        INSERT INTO fighters (name, age, height, reach, wins, losses, ko_wins, sub_wins, strike_accuracy, takedown_accuracy, takedown_defense)
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
-        ON CONFLICT (name) DO UPDATE 
-        SET age = $2, height = $3, reach = $4, wins = $5, losses = $6, ko_wins = $7, sub_wins = $8, strike_accuracy = $9, takedown_accuracy = $10, takedown_defense = $11
+      // Save both fighters with a different query approach
+      const saveFighterQuery = `
+        INSERT INTO fighters 
+          (name, age, height, reach, wins, losses, ko_wins, sub_wins, strike_accuracy, takedown_accuracy, takedown_defense)
+        VALUES 
+          ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
         RETURNING id`;
 
-      const fighter1Result = await client.query(fighter1Query, [
+      // Save fighter1
+      const fighter1Result = await client.query(saveFighterQuery, [
         fighter1.name,
         parseInt(fighter1.age) || 0,
         parseInt(fighter1.height) || 0,
@@ -165,7 +166,8 @@ app.post("/api/predict", async (req, res) => {
         parseFloat(fighter1.takedownDefense) || 0
       ]);
 
-      const fighter2Result = await client.query(fighter1Query, [
+      // Save fighter2
+      const fighter2Result = await client.query(saveFighterQuery, [
         fighter2.name,
         parseInt(fighter2.age) || 0,
         parseInt(fighter2.height) || 0,
@@ -230,6 +232,7 @@ app.post("/api/predict", async (req, res) => {
 
     } catch (error) {
       await client.query('ROLLBACK');
+      console.error('Database error:', error);
       throw error;
     } finally {
       client.release();
