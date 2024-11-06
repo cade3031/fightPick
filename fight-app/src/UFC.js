@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import './UFC.css';
 
 // Replace YOUR_TAILSCALE_IP with your actual Tailscale IP address
-const API_URL = 'http://localhost:8080';  // Make sure port matches your server
+const API_URL = 'http://100.119.251.66:8080';  // Replace with your server's IP
 
 const defaultFightOutcome = {
   goesToDistance: "Unknown",

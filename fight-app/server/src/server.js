@@ -5,8 +5,14 @@ const axios = require('axios');
 const { Pool } = require('pg');
 const pool = require('./config/db');
 
+// Update CORS configuration
+app.use(cors({
+  origin: '*',  // Be more specific in production
+  methods: ['GET', 'POST'],
+  allowedHeaders: ['Content-Type']
+}));
+
 // Add middleware
-app.use(cors());
 app.use(express.json());
 
 // Helper functions
