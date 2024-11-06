@@ -60,7 +60,7 @@ services:
     container_name: fight-app-ollama
     image: ollama/ollama 
     ports:
-      - "11434:11434"
+      - "11436:11434"
     volumes:
       - ollama_data:/root/.ollama
     command: serve
