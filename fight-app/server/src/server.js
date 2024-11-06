@@ -171,7 +171,7 @@ const predictFightOutcome = (fighter1, fighter2) => {
 };
 
 // Update this constant
-const OLLAMA_URL = process.env.OLLAMA_URL || "http://fight-app-ollama:11434";
+const OLLAMA_URL = process.env.OLLAMA_URL || "http://ollama:11434";
 
 // Add this function to call Ollama
 const getOllamaAnalysis = async (fighter1, fighter2, stats) => {
