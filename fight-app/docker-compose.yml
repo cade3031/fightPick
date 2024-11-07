@@ -65,7 +65,11 @@ services:
     volumes:
       - ollama_data:/root/.ollama
       - ./setup-ollama.sh:/setup-ollama.sh
-    command: sh -c "/setup-ollama.sh && ollama serve"
+    entrypoint: ["/bin/bash", "-c"]
+    command: |
+      chmod +x /setup-ollama.sh && 
+      /setup-ollama.sh && 
+      ollama serve
     restart: unless-stopped
     environment:
       - OLLAMA_HOST=0.0.0.0
