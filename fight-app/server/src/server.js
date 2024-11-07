@@ -7,7 +7,7 @@ const pool = require('./config/db'); // This helps us talk to our database
 // We create a new server
 const app = express();
 const PORT = process.env.PORT || 8080; // This is the door our server uses to talk to the internet
-const OLLAMA_URL = process.env.OLLAMA_URL || 'http://localhost:11435'; // This is where we find our AI friend
+const OLLAMA_URL = process.env.OLLAMA_URL || 'http://localhost:11434'; // This is where we find our AI friend
 
 // These are helpers that make our server work better
 app.use(express.json()); // This helps our server understand messages in a special format called JSON
