@@ -18,7 +18,7 @@ services:
       - backend
     container_name: fight-app-frontend
     networks:
-      - app-network
+      - fight-app_network
 
   # Backend Node.js server
   backend:
@@ -39,7 +39,7 @@ services:
       - ollama
     container_name: fight-app-backend
     networks:
-      - app-network
+      - fight-app_network
 
   # PostgreSQL database
   db:
@@ -54,7 +54,7 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
     networks:
-      - app-network
+      - fight-app_network
 
   # Ollama AI service
   ollama:
@@ -70,13 +70,12 @@ services:
       - OLLAMA_HOST=0.0.0.0
       - OLLAMA_ORIGINS=*
     networks:
-      - app-network
+      - fight-app_network
 
 volumes:
   postgres_data:
   ollama_data: 
 
 networks:
-  app-network:
+  fight-app_network:
     driver: bridge
-    name: fight-app_network
