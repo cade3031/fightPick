@@ -137,32 +137,16 @@ const getOllamaAnalysis = async (fighter1, fighter2) => {
       try {
         const response = await axios.post(`${OLLAMA_URL}/api/generate`, {
           model: "llama2:7b-chat-q4_0",
-          prompt: `You are an expert UFC fight analyst. Analyze this matchup in detail:
+          prompt: `Expert UFC analysis for ${fighter1.name} vs ${fighter2.name}:
+Stats: ${fighter1.name} (${fighter1.wins}-${fighter1.losses}, KO:${fighter1.koWins}) vs ${fighter2.name} (${fighter2.wins}-${fighter2.losses}, KO:${fighter2.koWins})
 
-${fighter1.name} vs ${fighter2.name}
+Quick analysis:
+1. Advantage and why
+2. Fight outcome (KO/Sub/Dec)
+3. Distance probability
+4. Best bet
 
-Fighter 1 Stats (${fighter1.name}):
-- Record: ${fighter1.wins}-${fighter1.losses}
-- KO Wins: ${fighter1.koWins}
-- Submission Wins: ${fighter1.subWins}
-- Decision Wins: ${fighter1.decisionWins}
-- Strike Accuracy: ${fighter1.strikeAccuracy}%
-
-Fighter 2 Stats (${fighter2.name}):
-- Record: ${fighter2.wins}-${fighter2.losses}
-- KO Wins: ${fighter2.koWins}
-- Submission Wins: ${fighter2.subWins}
-- Decision Wins: ${fighter2.decisionWins}
-- Strike Accuracy: ${fighter2.strikeAccuracy}%
-
-Provide a detailed analysis covering:
-1. Who has the advantage and why
-2. Predicted fight outcome (KO, Submission, or Decision)
-3. Probability of fight going to distance
-4. Most likely method of victory
-5. Which fighter to bet on
-
-Keep the response structured and concise.`,
+Keep response under 100 words.`,
           stream: false,
           options: {
             temperature: 0.7,
@@ -189,6 +173,104 @@ Keep the response structured and concise.`,
   }
 };
 
+// Add this new function to analyze multiple fights for parlays
+const generateParlayRecommendation = (analyzedFights, size) => {
+  try {
+    // Sort fights by confidence level
+    const sortedFights = analyzedFights.sort((a, b) => {
+      const aConf = parseFloat(a.simulationConfidence) || 0;
+      const bConf = parseFloat(b.simulationConfidence) || 0;
+      return bConf - aConf;
+    });
+
+    // Take the top N fights based on parlay size
+    const selectedFights = sortedFights.slice(0, size);
+
+    // Calculate combined probability and expected value
+    const parlayAnalysis = {
+      fights: selectedFights.map(fight => ({
+        fighters: `${fight.fighter1.name} vs ${fight.fighter2.name}`,
+        recommendedBet: fight.suggestedBet,
+        confidence: fight.simulationConfidence,
+        method: fight.fightOutcome?.likelyMethod || 'Decision',
+        odds: fight.fighter1.odds // Include odds for calculation
+      })),
+      totalConfidence: (selectedFights.reduce((acc, fight) => 
+        acc * (parseFloat(fight.simulationConfidence) / 100), 1) * 100).toFixed(2),
+      expectedValue: calculateParlayValue(selectedFights),
+      riskLevel: calculateRiskLevel(selectedFights)
+    };
+
+    return parlayAnalysis;
+  } catch (error) {
+    console.error('Error generating parlay:', error);
+    return null;
+  }
+};
+
+// Helper function to calculate parlay expected value
+const calculateParlayValue = (fights) => {
+  try {
+    let totalOdds = 1;
+    fights.forEach(fight => {
+      const odds = parseFloat(fight.suggestedBet.includes(fight.fighter1.name) 
+        ? fight.fighter1.odds 
+        : fight.fighter2.odds);
+      totalOdds *= (odds > 0 ? (odds / 100) + 1 : (-100 / odds) + 1);
+    });
+    return (totalOdds - 1).toFixed(2);
+  } catch (error) {
+    return 0;
+  }
+};
+
+// Helper function to calculate risk level
+const calculateRiskLevel = (fights) => {
+  const avgConfidence = fights.reduce((acc, fight) => 
+    acc + parseFloat(fight.simulationConfidence), 0) / fights.length;
+  
+  if (avgConfidence > 80) return 'Low';
+  if (avgConfidence > 65) return 'Medium';
+  return 'High';
+};
+
+// Add new endpoint for parlay recommendations
+app.post('/api/generate-parlay', async (req, res) => {
+  try {
+    const { size, analyzedFights } = req.body;
+    
+    if (!analyzedFights || analyzedFights.length < size) {
+      return res.status(400).json({
+        error: 'Not enough analyzed fights for parlay',
+        required: size,
+        available: analyzedFights?.length || 0
+      });
+    }
+
+    const parlayRecommendation = generateParlayRecommendation(analyzedFights, size);
+    
+    if (!parlayRecommendation) {
+      return res.status(500).json({
+        error: 'Failed to generate parlay recommendation'
+      });
+    }
+
+    res.json({
+      parlaySize: size,
+      recommendation: parlayRecommendation,
+      message: `${size}-Fight Parlay Generated`,
+      timestamp: new Date().toISOString()
+    });
+
+  } catch (error) {
+    console.error('Error in parlay generation:', error);
+    res.status(500).json({
+      error: 'Failed to generate parlay',
+      details: error.message
+    });
+  }
+});
+
 // This helps us catch any mistakes and say "Oops!"
 app.use((err, req, res, next) => {
   console.error('Error:', err);
@@ -208,5 +290,6 @@ app.listen(PORT, '0.0.0.0', () => {
   console.log('- GET  /'); // We can ask the server if it's awake
   console.log('- GET  /api/test'); // We can ask the server if it's working
   console.log('- POST /api/predict'); // We can ask the server to predict a fight
+  console.log('- POST /api/generate-parlay'); // We can ask the server to generate a parlay recommendation
   console.log('=================================');
 });

@@ -69,6 +69,8 @@ services:
     environment:
       - OLLAMA_HOST=0.0.0.0
       - OLLAMA_ORIGINS=*
+      - OLLAMA_COMPUTE_TYPE=cpu
+      - OLLAMA_CONTEXT_SIZE=2048
     networks:
       - fight-app_network
 
