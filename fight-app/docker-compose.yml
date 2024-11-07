@@ -64,17 +64,14 @@ services:
       - "11435:11434"
     volumes:
       - ollama_data:/root/.ollama
-    command: serve
+      - ./setup-ollama.sh:/setup-ollama.sh
+    command: sh -c "/setup-ollama.sh && ollama serve"
     restart: unless-stopped
     environment:
       - OLLAMA_HOST=0.0.0.0
       - OLLAMA_ORIGINS=*
-    deploy:
-      resources:
-        limits:
-          memory: 24G
-        reservations:
-          memory: 4G
+      - OLLAMA_MODELS=llama2:7b-chat-q4_0
+      - OLLAMA_PRELOAD=true
     tty: true
     stdin_open: true
     networks:

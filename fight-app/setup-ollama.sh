@@ -1,4 +1,12 @@
 #!/bin/bash
-echo "Waiting for Ollama service to start..."
-sleep 10
-docker exec fight-app-ollama-1 ollama pull llama2 
+
+# Wait for Ollama to be ready
+echo "Waiting for Ollama service..."
+sleep 5
+
+# Pull and load the model
+echo "Loading LLaMA model..."
+ollama pull llama2:7b-chat-q4_0
+
+# Keep the model loaded
+echo "Model loaded successfully"
