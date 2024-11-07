@@ -64,7 +64,12 @@ services:
       - "11435:11434"
     volumes:
       - ollama_data:/root/.ollama
-    command: ollama serve
+    entrypoint: ["/bin/sh", "-c"]
+    command: |
+      /usr/local/bin/ollama serve &
+      sleep 10 &&
+      /usr/local/bin/ollama pull llama2:7b-chat-q4_0 &&
+      tail -f /dev/null
     restart: unless-stopped
     environment:
       - OLLAMA_HOST=0.0.0.0
