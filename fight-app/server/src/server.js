@@ -132,12 +132,11 @@ const getOllamaAnalysis = async (fighter1, fighter2) => {
       fighter2: fighter2.name
     });
 
-    // Add retry logic
     let retries = 3;
     while (retries > 0) {
       try {
         const response = await axios.post(`${OLLAMA_URL}/api/generate`, {
-          model: "llama2:7b-chat",
+          model: "llama2:7b-chat-q4_0",
           prompt: `Analyze this UFC fight:
 ${fighter1.name} vs ${fighter2.name}
 
@@ -145,7 +144,7 @@ Stats:
 ${fighter1.name}: ${fighter1.wins}-${fighter1.losses}, KO Rate: ${((fighter1.koWins/fighter1.wins) * 100).toFixed(1)}%, Strike Acc: ${fighter1.strikeAccuracy}%
 ${fighter2.name}: ${fighter2.wins}-${fighter2.losses}, KO Rate: ${((fighter2.koWins/fighter2.wins) * 100).toFixed(1)}%, Strike Acc: ${fighter2.strikeAccuracy}%
 
-Who has the advantage and why?`,
+Who has the advantage and why? Keep the response concise.`,
           stream: false,
           options: {
             temperature: 0.7,
@@ -161,7 +160,7 @@ Who has the advantage and why?`,
         console.error(`Attempt ${4 - retries} failed:`, error.message);
         retries--;
         if (retries === 0) throw error;
-        await new Promise(resolve => setTimeout(resolve, 5000)); // Wait 5 seconds before retrying
+        await new Promise(resolve => setTimeout(resolve, 5000));
       }
     }
   } catch (error) {
