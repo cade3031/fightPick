@@ -127,14 +127,13 @@ const predictFightOutcome = (fighter1, fighter2) => {
 const getOllamaAnalysis = async (fighter1, fighter2) => {
   try {
     console.log("=== START OF OLLAMA ANALYSIS ===");
-    console.log("Preparing Ollama request for fighters:", {
-      fighter1: fighter1.name,
-      fighter2: fighter2.name
-    });
+    console.log("Connecting to Ollama at:", OLLAMA_URL);
+    console.log("Fighter data:", { fighter1, fighter2 });
 
     let retries = 3;
     while (retries > 0) {
       try {
+        console.log(`Attempt ${4 - retries}: Sending request to Ollama`);
         const response = await axios.post(`${OLLAMA_URL}/api/generate`, {
           model: "llama2:latest",
           prompt: `As an expert UFC analyst, provide a detailed breakdown of this fight:
@@ -169,23 +168,37 @@ Keep analysis focused and under 200 words.`,
             temperature: 0.7,
             top_p: 0.9
           }
+        }, {
+          timeout: 60000 // 60 second timeout
         });
 
-        console.log("Received response from Ollama:", response.data);
-        console.log("=== END OF OLLAMA ANALYSIS ===");
-
-        return response.data.response || "AI analysis unavailable";
+        if (response.data && response.data.response) {
+          console.log("Successfully received Ollama response");
+          return response.data.response;
+        } else {
+          console.error("Invalid response format from Ollama:", response.data);
+          return "AI analysis unavailable - invalid response format";
+        }
       } catch (error) {
         console.error(`Attempt ${4 - retries} failed:`, error.message);
+        console.error('Error details:', {
+          code: error.code,
+          response: error.response?.data,
+          config: {
+            url: error.config?.url,
+            method: error.config?.method
+          }
+        });
         retries--;
         if (retries === 0) throw error;
+        console.log(`Waiting 5 seconds before retry...`);
         await new Promise(resolve => setTimeout(resolve, 5000));
       }
     }
   } catch (error) {
     console.error('=== ERROR IN OLLAMA ANALYSIS ===');
-    console.error('Error details:', error);
-    console.error('Error stack:', error.stack);
+    console.error('Error details:', error.message);
+    console.error('Stack trace:', error.stack);
     return `AI analysis unavailable - ${error.message}`;
   }
 };
