@@ -136,17 +136,34 @@ const getOllamaAnalysis = async (fighter1, fighter2) => {
     while (retries > 0) {
       try {
         const response = await axios.post(`${OLLAMA_URL}/api/generate`, {
-          model: "llama2:7b-chat-q4_0",
-          prompt: `Expert UFC analysis for ${fighter1.name} vs ${fighter2.name}:
-Stats: ${fighter1.name} (${fighter1.wins}-${fighter1.losses}, KO:${fighter1.koWins}) vs ${fighter2.name} (${fighter2.wins}-${fighter2.losses}, KO:${fighter2.koWins})
+          model: "llama2:latest",
+          prompt: `As an expert UFC analyst, provide a detailed breakdown of this fight:
 
-Quick analysis:
-1. Advantage and why
-2. Fight outcome (KO/Sub/Dec)
-3. Distance probability
-4. Best bet
+${fighter1.name} vs ${fighter2.name}
 
-Keep response under 100 words.`,
+Fighter Stats:
+${fighter1.name}:
+- Record: ${fighter1.wins}-${fighter1.losses}
+- KO Wins: ${fighter1.koWins}
+- Submission Wins: ${fighter1.subWins}
+- Decision Wins: ${fighter1.decisionWins}
+- Strike Accuracy: ${fighter1.strikeAccuracy}%
+
+${fighter2.name}:
+- Record: ${fighter2.wins}-${fighter2.losses}
+- KO Wins: ${fighter2.koWins}
+- Submission Wins: ${fighter2.subWins}
+- Decision Wins: ${fighter2.decisionWins}
+- Strike Accuracy: ${fighter2.strikeAccuracy}%
+
+Provide analysis covering:
+1. Which fighter has the advantage and specifically why (consider striking, grappling, and experience)
+2. Predicted fight outcome with confidence level (KO, Submission, or Decision)
+3. Probability of fight going to distance based on finishing rates
+4. Most likely method of victory and why
+5. Betting recommendation with reasoning
+
+Keep analysis focused and under 200 words.`,
           stream: false,
           options: {
             temperature: 0.7,
