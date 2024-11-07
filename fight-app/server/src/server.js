@@ -1,56 +1,60 @@
-const express = require('express');
-const cors = require('cors');
-const axios = require('axios');
-const pool = require('./config/db');
+// We need some tools to make our server work
+const express = require('express'); // This helps us make a web server
+const cors = require('cors'); // This helps our server talk to other places on the internet
+const axios = require('axios'); // This helps us ask other computers for information
+const pool = require('./config/db'); // This helps us talk to our database
 
+// We create a new server
 const app = express();
-const PORT = process.env.PORT || 8080;
-const OLLAMA_URL = process.env.OLLAMA_URL || 'http://ollama:11434';
+const PORT = process.env.PORT || 8080; // This is the door our server uses to talk to the internet
+const OLLAMA_URL = process.env.OLLAMA_URL || 'http://ollama:11434'; // This is where we find our AI friend
 
-// Middleware
-app.use(express.json());
+// These are helpers that make our server work better
+app.use(express.json()); // This helps our server understand messages in a special format called JSON
 app.use(cors({
-  origin: ['http://100.119.251.66:3000', 'http://localhost:3000', '*'],
-  methods: ['GET', 'POST'],
-  allowedHeaders: ['Content-Type']
+  origin: ['http://100.119.251.66:3000', 'http://localhost:3000', '*'], // These are the places that can talk to our server
+  methods: ['GET', 'POST'], // These are the ways we can ask our server for things
+  allowedHeaders: ['Content-Type'] // This tells our server what kind of messages to expect
 }));
 
-// Request logging
+// This helps us see what our server is doing
 app.use((req, res, next) => {
-  console.log(`[${new Date().toISOString()}] ${req.method} ${req.url}`);
-  console.log('Request body:', req.body);
-  next();
+  console.log(`[${new Date().toISOString()}] ${req.method} ${req.url}`); // This shows us the time and what we asked the server to do
+  console.log('Request body:', req.body); // This shows us the message we sent to the server
+  next(); // This means "keep going"
 });
 
-// Basic test route
+// This is a simple test to see if our server is awake
 app.get('/', (req, res) => {
-  res.json({ message: 'Server is running' });
+  res.json({ message: 'Server is running' }); // This sends back a message saying "I'm awake!"
 });
 
-// Test route
+// Another test to see if our server is working
 app.get('/api/test', (req, res) => {
-  res.json({ message: 'API is working!' });
+  res.json({ message: 'API is working!' }); // This sends back a message saying "I'm working!"
 });
 
-// Add the predict endpoint
+// This is where we ask our server to predict a fight
 app.post("/api/predict", async (req, res) => {
   try {
+    console.log("=== START OF PREDICT REQUEST ===");
     console.log("Starting fight analysis process...");
-    console.log("Request body:", req.body);
+    console.log("Request body:", JSON.stringify(req.body, null, 2));
 
     const { fighter1, fighter2 } = req.body;
+    console.log("Extracted fighters:", { fighter1, fighter2 });
 
-    // Get AI analysis
+    // Log before Ollama request
+    console.log("About to call Ollama at:", OLLAMA_URL);
     console.log("Getting AI analysis...");
+    
     const aiAnalysis = await getOllamaAnalysis(fighter1, fighter2);
-    console.log("AI analysis received:", aiAnalysis);
+    console.log("AI analysis completed. Response:", aiAnalysis);
 
-    // Calculate fight outcome
-    console.log("Calculating fight outcome...");
+    console.log("Starting outcome prediction...");
     const outcomeAnalysis = predictFightOutcome(fighter1, fighter2);
-    console.log("Fight outcome calculated:", outcomeAnalysis);
+    console.log("Outcome prediction completed:", outcomeAnalysis);
 
-    // Send response
     const response = {
       message: aiAnalysis,
       aiAnalysis: true,
@@ -61,28 +65,33 @@ app.post("/api/predict", async (req, res) => {
       fightOutcome: outcomeAnalysis.prediction
     };
 
-    console.log("Sending response:", response);
+    console.log("Sending final response:", JSON.stringify(response, null, 2));
+    console.log("=== END OF PREDICT REQUEST ===");
+    
     res.json(response);
 
   } catch (error) {
-    console.error('Error in fight analysis:', error);
+    console.error('=== ERROR IN PREDICT REQUEST ===');
+    console.error('Error details:', error);
+    console.error('Error stack:', error.stack);
     res.status(500).json({
       error: 'Failed to analyze fight',
-      details: error.message
+      details: error.message,
+      stack: error.stack
     });
   }
 });
 
-// Add helper functions
+// This is how we guess who might win the fight
 const predictFightOutcome = (fighter1, fighter2) => {
   try {
-    // Calculate win probabilities based on records
+    // We look at how many fights each fighter has won and lost
     const f1Wins = parseInt(fighter1.wins) || 0;
     const f1Losses = parseInt(fighter1.losses) || 0;
     const f2Wins = parseInt(fighter2.wins) || 0;
     const f2Losses = parseInt(fighter2.losses) || 0;
 
-    // Calculate win rates
+    // We calculate how often each fighter wins
     const f1WinRate = f1Wins / (f1Wins + f1Losses) * 100;
     const f2WinRate = f2Wins / (f2Wins + f2Losses) * 100;
 
@@ -99,7 +108,7 @@ const predictFightOutcome = (fighter1, fighter2) => {
       }
     };
   } catch (error) {
-    console.error('Error in predictFightOutcome:', error);
+    console.error('Error in predictFightOutcome:', error); // If something goes wrong, we say "Oops!"
     return {
       prediction: {
         goesToDistance: "Unknown",
@@ -114,13 +123,22 @@ const predictFightOutcome = (fighter1, fighter2) => {
   }
 };
 
+// This is how we ask our AI friend for help
 const getOllamaAnalysis = async (fighter1, fighter2) => {
   try {
-    console.log("Starting llama2:7b-chat analysis...");
+    console.log("=== START OF OLLAMA ANALYSIS ===");
+    console.log("Preparing Ollama request for fighters:", {
+      fighter1: fighter1.name,
+      fighter2: fighter2.name
+    });
 
-    const response = await axios.post(`${OLLAMA_URL}/api/generate`, {
-      model: "llama2:7b-chat",
-      prompt: `Analyze this UFC fight:
+    // Add retry logic
+    let retries = 3;
+    while (retries > 0) {
+      try {
+        const response = await axios.post(`${OLLAMA_URL}/api/generate`, {
+          model: "llama2:7b-chat",
+          prompt: `Analyze this UFC fight:
 ${fighter1.name} vs ${fighter2.name}
 
 Stats:
@@ -128,22 +146,33 @@ ${fighter1.name}: ${fighter1.wins}-${fighter1.losses}, KO Rate: ${((fighter1.koW
 ${fighter2.name}: ${fighter2.wins}-${fighter2.losses}, KO Rate: ${((fighter2.koWins/fighter2.wins) * 100).toFixed(1)}%, Strike Acc: ${fighter2.strikeAccuracy}%
 
 Who has the advantage and why?`,
-      stream: false,
-      options: {
-        temperature: 0.7,
-        top_p: 0.9,
-        max_tokens: 500
-      }
-    });
+          stream: false,
+          options: {
+            temperature: 0.7,
+            top_p: 0.9
+          }
+        });
 
-    return response.data.response || "AI analysis unavailable";
+        console.log("Received response from Ollama:", response.data);
+        console.log("=== END OF OLLAMA ANALYSIS ===");
+
+        return response.data.response || "AI analysis unavailable";
+      } catch (error) {
+        console.error(`Attempt ${4 - retries} failed:`, error.message);
+        retries--;
+        if (retries === 0) throw error;
+        await new Promise(resolve => setTimeout(resolve, 5000)); // Wait 5 seconds before retrying
+      }
+    }
   } catch (error) {
-    console.error('Ollama error:', error);
+    console.error('=== ERROR IN OLLAMA ANALYSIS ===');
+    console.error('Error details:', error);
+    console.error('Error stack:', error.stack);
     return `AI analysis unavailable - ${error.message}`;
   }
 };
 
-// Error handling middleware
+// This helps us catch any mistakes and say "Oops!"
 app.use((err, req, res, next) => {
   console.error('Error:', err);
   res.status(500).json({
@@ -152,15 +181,15 @@ app.use((err, req, res, next) => {
   });
 });
 
-// Start server
+// We start our server so it can talk to the internet
 app.listen(PORT, '0.0.0.0', () => {
   console.log('=================================');
-  console.log(`Server running on port ${PORT}`);
-  console.log(`Server URL: http://100.119.251.66:${PORT}`);
-  console.log(`Ollama URL: ${OLLAMA_URL}`);
+  console.log(`Server running on port ${PORT}`); // We tell ourselves the server is running
+  console.log(`Server URL: http://100.119.251.66:${PORT}`); // We tell ourselves where to find the server
+  console.log(`Ollama URL: ${OLLAMA_URL}`); // We tell ourselves where to find the AI
   console.log('Available endpoints:');
-  console.log('- GET  /');
-  console.log('- GET  /api/test');
-  console.log('- POST /api/predict');
+  console.log('- GET  /'); // We can ask the server if it's awake
+  console.log('- GET  /api/test'); // We can ask the server if it's working
+  console.log('- POST /api/predict'); // We can ask the server to predict a fight
   console.log('=================================');
 });
