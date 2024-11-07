@@ -56,25 +56,19 @@ services:
     networks:
       - fight-app_network
 
-  # Ollama AI service
-  ollama:
-    container_name: ollama
-    image: ollama/ollama 
-    ports:
-      - "11435:11434"
-    volumes:
-      - ollama_data:/root/.ollama
-    entrypoint: ["/bin/sh", "-c"]
-    command: |
-      /usr/local/bin/ollama serve &
-      sleep 10 &&
-      /usr/local/bin/ollama pull llama2:7b-chat-q4_0 &&
-      tail -f /dev/null
-    restart: unless-stopped
-    environment:
-      - OLLAMA_HOST=0.0.0.0
+ollama:
+  container_name: ollama
+  image: ollama/ollama
+  ports:
+    - "11435:11434"
+  volumes:
+    - ollama_data:/root/.ollama
+  command: "serve"
+  restart: unless-stopped
+  environment:
+    - OLLAMA_HOST=0.0.0.0
       - OLLAMA_ORIGINS=*
-    networks:
+  networks:
       - fight-app_network
 
 volumes:
