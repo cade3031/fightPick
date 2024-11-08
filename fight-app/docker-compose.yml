@@ -11,7 +11,7 @@ services:
     volumes:
       - ./src:/app/src
     environment:
-      - REACT_APP_API_URL=http://wiedserver.tail448edd.ts.net:8080
+      - REACT_APP_API_URL=http://100.119.251.66:8080
       - NODE_ENV=development
     command: npm run dev
     container_name: fight-app-frontend
@@ -26,7 +26,7 @@ services:
     network_mode: "host"
     environment:
       - DATABASE_URL=postgresql://postgres:postgres@localhost:5432/fightpick_db
-      - OLLAMA_URL=http://wiedserver.tail448edd.ts.net:11434
+      - OLLAMA_URL=http://localhost:11434
       - PORT=8080
     command: npm run dev
     volumes:
