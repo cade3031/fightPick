@@ -1,13 +1,14 @@
-// We need some tools to make our server work
-const express = require('express'); // This helps us make a web server
-const cors = require('cors'); // This helps our server talk to other places on the internet
-const axios = require('axios'); // This helps us ask other computers for information
-const pool = require('./config/db'); // This helps us talk to our database
+// Update imports to use ES modules
+import express from 'express';
+import cors from 'cors';
+import axios from 'axios';
+import pkg from '../config/db.js';
+const { pool } = pkg;
 
-// We create a new server
+// Create app and set constants
 const app = express();
-const PORT = process.env.PORT || 8080; // This is the door our server uses to talk to the internet
-const OLLAMA_URL = process.env.OLLAMA_URL || 'http://localhost:11434'; // Using your server's IP
+const PORT = process.env.PORT || 8080;
+const OLLAMA_URL = process.env.OLLAMA_URL || 'http://localhost:11434';
 
 // Add this near the top of your server.js, after creating the app
 app.use(express.json());  // Add this line to parse JSON requests

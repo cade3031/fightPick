@@ -132,12 +132,6 @@ function UFC() {
   const handleFightClick = (event, competitors) => {
     console.log("handleFightClick called with:", { event, competitors });
 
-    if (!handleAnalyzeFight(event, competitors)) {
-      console.log("handleAnalyzeFight returned false");
-      return;
-    }
-
-    // Add safety checks for markets data
     const markets = event.displayGroups?.[0]?.markets;
     if (!markets || !markets[0]?.outcomes) {
       console.error('Missing markets data:', { markets });
@@ -183,13 +177,20 @@ function UFC() {
     setIsInputMode(true);
   };
 
-  const handleAnalyzeFight = (event) => {
-    const fighter1 = event.competitors[0].name;
-    const fighter2 = event.competitors[1].name;
-    const fightId = `${fighter1}-${fighter2}`;
-    if (analyzedFights.has(fightId)) {
+  const handleAnalyzeFight = (event, competitors) => {
+    if (!event || !competitors || competitors.length !== 2) {
+      console.error('Invalid event or competitors data:', { event, competitors });
       return false;
-    } 
+    }
+
+    // Check if fight has already been analyzed
+    const fightId = `${competitors[0].name}-${competitors[1].name}`;
+    if (analyzedFights.has(fightId)) {
+      console.log('Fight already analyzed:', fightId);
+      return false;
+    }
+
+    // Add fight to analyzed set
     setAnalyzedFights(prev => new Set([...prev, fightId]));
     return true;
   };
