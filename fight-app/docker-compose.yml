@@ -11,7 +11,7 @@ services:
     volumes:
       - ./src:/app/src
     environment:
-      - REACT_APP_API_URL=http://100.119.251.66:8080
+      - REACT_APP_API_URL=http://100.119.251.66:11434
       - NODE_ENV=development
     command: npm run dev
     container_name: fight-app-frontend
