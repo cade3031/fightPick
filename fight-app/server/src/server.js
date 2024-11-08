@@ -175,17 +175,25 @@ const getOllamaAnalysis = async (fighter1, fighter2) => {
     console.log("Connecting to Ollama at:", OLLAMA_URL);
     console.log("Fighter data:", { fighter1, fighter2 });
 
-    let retries = 5;  // Increased retries
+    let retries = 5;  // Keep 5 retries
     while (retries > 0) {
       try {
         console.log(`Attempt ${6 - retries}: Sending request to Ollama`);
+        
+        // First, check if Ollama is responding with a simple request
+        const healthCheck = await axios.get(`${OLLAMA_URL}/api/tags`, {
+          timeout: 10000  // 10 second timeout for health check
+        });
+        console.log("✅ Ollama health check passed");
+
+        // Then send the actual analysis request
         const response = await axios.post(`${OLLAMA_URL}/api/generate`, {
           model: "llama2",
           prompt: `Expert UFC fight analysis for ${fighter1.name} vs ${fighter2.name}:
 
 Stats:
-${fighter1.name} (${fighter1.wins}-${fighter1.losses}, KO:${fighter1.koWins}, Sub:${fighter1.subWins}, Dec:${fighter1.decisionWins})
-${fighter2.name} (${fighter2.wins}-${fighter2.losses}, KO:${fighter2.koWins}, Sub:${fighter2.subWins}, Dec:${fighter2.decisionWins})
+${fighter1.name} (${fighter1.wins}-${fighter1.losses}, KO:${fighter1.koWins})
+${fighter2.name} (${fighter2.wins}-${fighter2.losses}, KO:${fighter2.koWins})
 
 Quick analysis:
 1. Fighter advantage and why
@@ -200,7 +208,7 @@ Keep response under 100 words.`,
             top_p: 0.9
           }
         }, {
-          timeout: 600000  // Increased to 10 minutes
+          timeout: 60000  // 60 second timeout for analysis
         });
 
         if (response.data && response.data.response) {
@@ -211,10 +219,11 @@ Keep response under 100 words.`,
         }
       } catch (error) {
         console.error(`❌ Attempt ${6 - retries} failed:`, error.message);
+        console.error('Full error:', error);
         retries--;
         if (retries === 0) throw error;
-        console.log(`⏳ Waiting 20 seconds before retry...`);
-        await new Promise(resolve => setTimeout(resolve, 20000));  // Increased wait time
+        console.log(`⏳ Waiting 10 seconds before retry...`);
+        await new Promise(resolve => setTimeout(resolve, 10000));  // 10 second wait between retries
       }
     }
   } catch (error) {
