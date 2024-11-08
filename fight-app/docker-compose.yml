@@ -39,6 +39,8 @@ services:
     container_name: fight-app-backend
     networks:
       - fight-app_network
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
 
   # PostgreSQL database
   db:

@@ -55,8 +55,6 @@ function UFC() {
         subWins: parseInt(selectedFight.fighter1.subWins) || 0,
         decisionWins: parseInt(selectedFight.fighter1.decisionWins) || 0,
         strikeAccuracy: parseFloat(selectedFight.fighter1.strikeAccuracy) || 0,
-        takedownAccuracy: parseFloat(selectedFight.fighter1.takedownAccuracy) || 0,
-        takedownDefense: parseFloat(selectedFight.fighter1.takedownDefense) || 0
       },
       fighter2: {
         ...selectedFight.fighter2,
@@ -66,8 +64,6 @@ function UFC() {
         subWins: parseInt(selectedFight.fighter2.subWins) || 0,
         decisionWins: parseInt(selectedFight.fighter2.decisionWins) || 0,
         strikeAccuracy: parseFloat(selectedFight.fighter2.strikeAccuracy) || 0,
-        takedownAccuracy: parseFloat(selectedFight.fighter2.takedownAccuracy) || 0,
-        takedownDefense: parseFloat(selectedFight.fighter2.takedownDefense) || 0
       }
     };
     
@@ -83,30 +79,14 @@ function UFC() {
         body: JSON.stringify(fighterData)
       });
 
-      console.log("Response status:", response.status);
-      
       if (!response.ok) {
-        const errorData = await response.json();
-        console.error("Error response:", errorData);
-        throw new Error(`HTTP error! status: ${response.status}, message: ${errorData.error || 'Unknown error'}`);
+        throw new Error(`HTTP error! status: ${response.status}`);
       }
 
       const data = await response.json();
       console.log("Received analysis:", data);
       
-      setPrediction({
-        ...data,
-        fighter1Probability: data.fighter1Probability || '0.0',
-        fighter2Probability: data.fighter2Probability || '0.0',
-        simulationConfidence: data.simulationConfidence || 80,
-        suggestedBet: data.suggestedBet || 'No recommendation',
-        fightOutcome: data.fightOutcome || defaultFightOutcome,
-        bettingAdvice: data.bettingAdvice || {
-          fighter1: { kellyBet: '0.0', expectedValue: '0.0' },
-          fighter2: { kellyBet: '0.0', expectedValue: '0.0' }
-        }
-      });
-      
+      setPrediction(data);
       setOllamaResponse(data.message || 'No AI analysis available');
       setIsInputMode(false);
     } catch (error) {
