@@ -1,5 +1,6 @@
 {
   "name": "fight-app-server",
+  "type": "module",
   "version": "1.0.0",
   "description": "Backend for Fight App",
   "main": "src/server.js",
