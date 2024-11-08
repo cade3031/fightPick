@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import './UFC.css';
 
 // Replace YOUR_TAILSCALE_IP with your actual Tailscale IP address
-const API_URL = process.env.REACT_APP_API_URL || 'http://100.119.251.66:11434';  // Make sure this matches your server IP
+const API_URL = process.env.REACT_APP_API_URL || 'http://100.119.251.66:8080';  // Point to backend port 8080, not Ollama
 
 const defaultFightOutcome = {
   goesToDistance: "Unknown",
