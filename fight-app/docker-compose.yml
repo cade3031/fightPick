@@ -11,7 +11,7 @@ services:
     volumes:
       - ./src:/app/src
     environment:
-      - REACT_APP_API_URL=http://wiedserver.tail448edd.ts.net:8080
+      - REACT_APP_API_URL=http://100.119.251.66:8080
       - NODE_ENV=development
     command: npm run dev
     container_name: fight-app-frontend
@@ -23,20 +23,15 @@ services:
     build:
       context: .
       dockerfile: Dockerfile.backend
-    ports:
-      - "8080:8080"
+    network_mode: "host"
     environment:
-      - DATABASE_URL=postgresql://postgres:postgres@db:5432/fightpick_db
+      - DATABASE_URL=postgresql://postgres:postgres@localhost:5432/fightpick_db
       - OLLAMA_URL=http://100.119.251.66:11434
       - PORT=8080
     command: npm run dev
     volumes:
       - ./server/src:/app/server/src
-    depends_on:
-      - db
     container_name: fight-app-backend
-    networks:
-      - fight-app_network
 
   # PostgreSQL database
   db:
