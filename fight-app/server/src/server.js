@@ -12,7 +12,7 @@ const OLLAMA_URL = process.env.OLLAMA_URL || 'http://localhost:11434'; // Using 
 // These are helpers that make our server work better
 app.use(express.json()); // This helps our server understand messages in a special format called JSON
 app.use(cors({
-  origin: ['http://100.119.251.66:3000', 'http://localhost:3000', '*'], // These are the places that can talk to our server
+  origin: '*', // These are the places that can talk to our server
   methods: ['GET', 'POST'], // These are the ways we can ask our server for things
   allowedHeaders: ['Content-Type'] // This tells our server what kind of messages to expect
 }));
