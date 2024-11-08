@@ -10,11 +10,12 @@ const PORT = process.env.PORT || 8080; // This is the door our server uses to ta
 const OLLAMA_URL = process.env.OLLAMA_URL || 'http://localhost:11434'; // Using your server's IP
 
 // These are helpers that make our server work better
-app.use(express.json()); // This helps our server understand messages in a special format called JSON
+
 app.use(cors({
   origin: '*', // These are the places that can talk to our server
-  methods: ['GET', 'POST'], // These are the ways we can ask our server for things
-  allowedHeaders: ['Content-Type'] // This tells our server what kind of messages to expect
+  methods: ['GET', 'POST', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Accept', 'Origin'],
+  credentials: true
 }));
 
 // This helps us see what our server is doing
