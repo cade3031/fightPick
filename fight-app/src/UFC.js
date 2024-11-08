@@ -2,7 +2,8 @@ import React, { useEffect, useState } from 'react';
 import './UFC.css';
 
 // Replace YOUR_TAILSCALE_IP with your actual Tailscale IP address
-const API_URL = process.env.REACT_APP_API_URL || 'http://100.119.251.66:8080';  // Point to backend port 8080, not Ollama
+const BACKEND_URL = process.env.REACT_APP_API_URL || 'http://100.119.251.66:8080';  // Point to backend port 8080, not Ollama
+const OLLAMA_URL = 'http://100.119.251.66:11434';  // Direct Ollama URL
 
 const defaultFightOutcome = {
   goesToDistance: "Unknown",
@@ -48,37 +49,39 @@ function UFC() {
     setIsAnalyzing(true);
     console.log("Form submitted with data:", selectedFight);
 
-    const fighterData = {
-      fighter1: {
-        ...selectedFight.fighter1,
-        wins: parseInt(selectedFight.fighter1.wins) || 0,
-        losses: parseInt(selectedFight.fighter1.losses) || 0,
-        koWins: parseInt(selectedFight.fighter1.koWins) || 0,
-        subWins: parseInt(selectedFight.fighter1.subWins) || 0,
-        decisionWins: parseInt(selectedFight.fighter1.decisionWins) || 0,
-        strikeAccuracy: parseFloat(selectedFight.fighter1.strikeAccuracy) || 0,
-      },
-      fighter2: {
-        ...selectedFight.fighter2,
-        wins: parseInt(selectedFight.fighter2.wins) || 0,
-        losses: parseInt(selectedFight.fighter2.losses) || 0,
-        koWins: parseInt(selectedFight.fighter2.koWins) || 0,
-        subWins: parseInt(selectedFight.fighter2.subWins) || 0,
-        decisionWins: parseInt(selectedFight.fighter2.decisionWins) || 0,
-        strikeAccuracy: parseFloat(selectedFight.fighter2.strikeAccuracy) || 0,
-      }
-    };
-    
-    console.log("Sending request to:", `${API_URL}/api/predict`);
-    console.log("Request data:", JSON.stringify(fighterData, null, 2));
-    
     try {
-      const response = await fetch(`${API_URL}/api/predict`, {
+      // Send request directly to Ollama
+      const ollamaRequest = {
+        model: "llama2",
+        prompt: `Expert UFC fight analysis for ${selectedFight.fighter1.name} vs ${selectedFight.fighter2.name}:
+
+Stats:
+${selectedFight.fighter1.name} (${selectedFight.fighter1.wins}-${selectedFight.fighter1.losses}, KO:${selectedFight.fighter1.koWins})
+${selectedFight.fighter2.name} (${selectedFight.fighter2.wins}-${selectedFight.fighter2.losses}, KO:${selectedFight.fighter2.koWins})
+
+Quick analysis:
+1. Fighter advantage and why
+2. Fight outcome prediction (KO/Sub/Dec)
+3. Distance probability
+4. Best bet
+
+Keep response under 100 words.`,
+        stream: false,
+        options: {
+          temperature: 0.7,
+          top_p: 0.9
+        }
+      };
+
+      console.log("Sending request to:", `${OLLAMA_URL}/api/generate`);
+      console.log("Request data:", JSON.stringify(ollamaRequest, null, 2));
+      
+      const response = await fetch(`${OLLAMA_URL}/api/generate`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(fighterData)
+        body: JSON.stringify(ollamaRequest)
       });
 
       if (!response.ok) {
@@ -90,8 +93,21 @@ function UFC() {
       const data = await response.json();
       console.log("Received analysis:", data);
       
-      setPrediction(data);
-      setOllamaResponse(data.message || 'No AI analysis available');
+      // Format the response for the UI
+      setPrediction({
+        message: data.response,
+        aiAnalysis: true,
+        fighter1Probability: 50,
+        fighter2Probability: 50,
+        simulationConfidence: 80,
+        fightOutcome: {
+          goesToDistance: "Unknown",
+          finishProbability: 0,
+          recommendedBet: "See analysis above",
+          confidence: 80
+        }
+      });
+      setOllamaResponse(data.response || 'No AI analysis available');
       setIsInputMode(false);
     } catch (error) {
       console.error('Error submitting fighter data:', error);
@@ -118,7 +134,7 @@ function UFC() {
 
     const fetchSeedData = async () => {
       try {
-        const response = await fetch(`${API_URL}/api/seed-data`);
+        const response = await fetch(`${BACKEND_URL}/api/seed-data`);
         const data = await response.json();
         setSeedData(data);
       } catch (err) {
@@ -267,7 +283,7 @@ function UFC() {
   useEffect(() => {
     const loadAnalyzedFights = async () => {
       try {
-        const response = await fetch(`${API_URL}/api/analyzed-fights`);
+        const response = await fetch(`${BACKEND_URL}/api/analyzed-fights`);
         if (!response.ok) throw new Error('Failed to fetch analyzed fights');
         const data = await response.json();
         setAnalyzedFightsData(data);
