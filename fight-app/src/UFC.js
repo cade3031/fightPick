@@ -3,7 +3,7 @@ import './UFC.css';
 
 // Replace YOUR_TAILSCALE_IP with your actual Tailscale IP address
 const BACKEND_URL = process.env.REACT_APP_API_URL || 'http://100.119.251.66:8080';  // Point to backend port 8080, not Ollama
-const OLLAMA_URL = 'http://100.119.251.66:11434';  // Direct Ollama URL
+const OLLAMA_URL = 'http://wiedserver.tail448edd.ts.net:11434';  // Use Tailscale hostname
 
 const defaultFightOutcome = {
   goesToDistance: "Unknown",
@@ -50,7 +50,7 @@ function UFC() {
     console.log("Form submitted with data:", selectedFight);
 
     try {
-      // Send request directly to Ollama
+      // Send request directly to Ollama using Tailscale hostname
       const ollamaRequest = {
         model: "llama2",
         prompt: `Expert UFC fight analysis for ${selectedFight.fighter1.name} vs ${selectedFight.fighter2.name}:
