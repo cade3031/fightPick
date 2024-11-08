@@ -175,9 +175,8 @@ const getOllamaAnalysis = async (fighter1, fighter2) => {
     console.log("Connecting to Ollama at:", OLLAMA_URL);
     console.log("Fighter data:", { fighter1, fighter2 });
 
-    const response = await axios.post(`${OLLAMA_URL}/api/generate`, {
-      model: "llama2",
-      prompt: `Expert UFC fight analysis for ${fighter1.name} vs ${fighter2.name}:
+    // Create the prompt
+    const prompt = `Expert UFC fight analysis for ${fighter1.name} vs ${fighter2.name}:
 
 Stats:
 ${fighter1.name} (${fighter1.wins}-${fighter1.losses}, KO:${fighter1.koWins})
@@ -189,14 +188,28 @@ Quick analysis:
 3. Distance probability
 4. Best bet
 
-Keep response under 100 words.`,
-      stream: false,
-      options: {
-        temperature: 0.7,
-        top_p: 0.9
-      }
-    }, {
-      timeout: 300000  // 5 minute timeout
+Keep response under 100 words.`;
+
+    // Make the request with a longer timeout
+    const response = await axios({
+      method: 'post',
+      url: `${OLLAMA_URL}/api/generate`,
+      data: {
+        model: "llama2",
+        prompt: prompt,
+        stream: false,
+        options: {
+          temperature: 0.7,
+          top_p: 0.9
+        }
+      },
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json'
+      },
+      timeout: 300000, // 5 minutes
+      maxContentLength: Infinity,
+      maxBodyLength: Infinity
     });
 
     if (response.data && response.data.response) {
@@ -209,6 +222,13 @@ Keep response under 100 words.`,
   } catch (error) {
     console.error('=== ERROR IN OLLAMA ANALYSIS ===');
     console.error('Error details:', error.message);
+    if (error.response) {
+      console.error('Response data:', error.response.data);
+      console.error('Response status:', error.response.status);
+    }
+    if (error.request) {
+      console.error('Request details:', error.request);
+    }
     return `AI analysis unavailable - ${error.message}`;
   }
 };

@@ -23,10 +23,11 @@ services:
     build:
       context: .
       dockerfile: Dockerfile.backend
-    network_mode: "host"
+    ports:
+      - "8080:8080"
     environment:
-      - DATABASE_URL=postgresql://postgres:postgres@localhost:5432/fightpick_db
-      - OLLAMA_URL=http://wiedserver.tail448edd.ts.net:11434
+      - DATABASE_URL=postgresql://postgres:postgres@db:5432/fightpick_db
+      - OLLAMA_URL=http://100.119.251.66:11434
       - PORT=8080
     command: npm run dev
     volumes:
@@ -34,6 +35,8 @@ services:
     depends_on:
       - db
     container_name: fight-app-backend
+    networks:
+      - fight-app_network
 
   # PostgreSQL database
   db:
