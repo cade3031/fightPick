@@ -3,7 +3,7 @@ const express = require('express'); // This helps us make a web server
 const cors = require('cors'); // This helps our server talk to other places on the internet
 const axios = require('axios'); // This helps us ask other computers for information
 const pool = require('./config/db'); // This helps us talk to our database
-
+const fetch = require('node-fetch');
 // We create a new server
 const app = express();
 const PORT = process.env.PORT || 8080; // This is the door our server uses to talk to the internet
@@ -175,10 +175,15 @@ const getOllamaAnalysis = async (fighter1, fighter2) => {
     console.log("Connecting to Ollama at:", OLLAMA_URL);
     console.log("Fighter data:", { fighter1, fighter2 });
 
-    // Single attempt with longer timeout
-    const response = await axios.post(`${OLLAMA_URL}/api/generate`, {
-      model: "llama2",
-      prompt: `Expert UFC fight analysis for ${fighter1.name} vs ${fighter2.name}:
+    // Use node-fetch instead of axios
+    const response = await fetch(`${OLLAMA_URL}/api/generate`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: "llama2",
+        prompt: `Expert UFC fight analysis for ${fighter1.name} vs ${fighter2.name}:
 
 Stats:
 ${fighter1.name} (${fighter1.wins}-${fighter1.losses}, KO:${fighter1.koWins})
@@ -191,20 +196,25 @@ Quick analysis:
 4. Best bet
 
 Keep response under 100 words.`,
-      stream: false,
-      options: {
-        temperature: 0.7,
-        top_p: 0.9
-      }
-    }, {
-      timeout: 300000  // 5 minute timeout
+        stream: false,
+        options: {
+          temperature: 0.7,
+          top_p: 0.9
+        }
+      })
     });
 
-    if (response.data && response.data.response) {
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    const data = await response.json();
+    
+    if (data && data.response) {
       console.log("✅ Successfully received Ollama response");
-      return response.data.response;
+      return data.response;
     } else {
-      console.error("Invalid response format:", response.data);
+      console.error("Invalid response format:", data);
       throw new Error("Invalid response format from Ollama");
     }
   } catch (error) {
