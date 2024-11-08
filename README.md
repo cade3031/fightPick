@@ -35,3 +35,18 @@ to run the whole app in docker container
 
 run docker-compose up 
 
+commad to see the database 
+
+docker exec -it fight-app-db psql -U postgres -d fightpick_db
+
+\dt to see the tables 
+
+to see the ollama docker container  and the version of ollama
+
+docker ps 
+
+docker exec f7440360af1e ollama --version
+
+start ollama server 
+
+ollama server in another terminal 

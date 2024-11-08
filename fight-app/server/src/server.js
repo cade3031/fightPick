@@ -176,7 +176,7 @@ const getOllamaAnalysis = async (fighter1, fighter2) => {
     console.log("Connecting to Ollama at:", OLLAMA_URL);
     console.log("Fighter data:", { fighter1, fighter2 });
 
-    // Try using node-fetch
+    // Make the request directly to Ollama
     const response = await fetch(`${OLLAMA_URL}/api/generate`, {
       method: 'POST',
       headers: {
@@ -221,10 +221,6 @@ Keep response under 100 words.`,
   } catch (error) {
     console.error('=== ERROR IN OLLAMA ANALYSIS ===');
     console.error('Error details:', error.message);
-    if (error.response) {
-      console.error('Response data:', error.response.data);
-      console.error('Response status:', error.response.status);
-    }
     return `AI analysis unavailable - ${error.message}`;
   }
 };
