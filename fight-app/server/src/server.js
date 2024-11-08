@@ -175,18 +175,12 @@ const getOllamaAnalysis = async (fighter1, fighter2) => {
     console.log("Connecting to Ollama at:", OLLAMA_URL);
     console.log("Fighter data:", { fighter1, fighter2 });
 
-    let retries = 5;  // Keep 5 retries
+    let retries = 3;  // Reduced retries
     while (retries > 0) {
       try {
-        console.log(`Attempt ${6 - retries}: Sending request to Ollama`);
+        console.log(`Attempt ${4 - retries}: Sending request to Ollama`);
         
-        // First, check if Ollama is responding with a simple request
-        const healthCheck = await axios.get(`${OLLAMA_URL}/api/tags`, {
-          timeout: 10000  // 10 second timeout for health check
-        });
-        console.log("✅ Ollama health check passed");
-
-        // Then send the actual analysis request
+        // Send the analysis request with increased timeout
         const response = await axios.post(`${OLLAMA_URL}/api/generate`, {
           model: "llama2",
           prompt: `Expert UFC fight analysis for ${fighter1.name} vs ${fighter2.name}:
@@ -208,22 +202,28 @@ Keep response under 100 words.`,
             top_p: 0.9
           }
         }, {
-          timeout: 60000  // 60 second timeout for analysis
+          timeout: 120000,  // Increased to 2 minutes
+          maxContentLength: Infinity,
+          maxBodyLength: Infinity
         });
 
         if (response.data && response.data.response) {
           console.log("✅ Successfully received Ollama response");
           return response.data.response;
         } else {
+          console.error("Invalid response format:", response.data);
           throw new Error("Invalid response format from Ollama");
         }
       } catch (error) {
-        console.error(`❌ Attempt ${6 - retries} failed:`, error.message);
-        console.error('Full error:', error);
+        console.error(`❌ Attempt ${4 - retries} failed:`, error.message);
+        if (error.response) {
+          console.error('Response data:', error.response.data);
+          console.error('Response status:', error.response.status);
+        }
         retries--;
         if (retries === 0) throw error;
-        console.log(`⏳ Waiting 10 seconds before retry...`);
-        await new Promise(resolve => setTimeout(resolve, 10000));  // 10 second wait between retries
+        console.log(`⏳ Waiting 15 seconds before retry...`);
+        await new Promise(resolve => setTimeout(resolve, 15000));  // Increased wait time
       }
     }
   } catch (error) {
