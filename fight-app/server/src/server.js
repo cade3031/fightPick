@@ -214,7 +214,7 @@ Keep analysis focused and under 200 words.`,
             top_p: 0.9
           }
         }, {
-          timeout: 120000
+          timeout: 300000  // Increased to 5 minutes
         });
 
         if (response.data && response.data.response) {
@@ -226,18 +226,11 @@ Keep analysis focused and under 200 words.`,
         }
       } catch (error) {
         console.error(`Attempt ${4 - retries} failed:`, error.message);
-        console.error('Error details:', {
-          code: error.code,
-          response: error.response?.data,
-          config: {
-            url: error.config?.url,
-            method: error.config?.method
-          }
-        });
+        console.error('Full error:', error);
         retries--;
         if (retries === 0) throw error;
-        console.log(`Waiting 5 seconds before retry...`);
-        await new Promise(resolve => setTimeout(resolve, 5000));
+        console.log(`Waiting 10 seconds before retry...`);
+        await new Promise(resolve => setTimeout(resolve, 10000)); // Increased wait time
       }
     }
   } catch (error) {
