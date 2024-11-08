@@ -49,32 +49,31 @@ function UFC() {
     console.log("Form submitted with data:", selectedFight);
 
     const fighterData = {
-      model: "llama2",
-      prompt: `Expert UFC fight analysis for ${selectedFight.fighter1.name} vs ${selectedFight.fighter2.name}:
-
-Stats:
-${selectedFight.fighter1.name} (${selectedFight.fighter1.wins}-${selectedFight.fighter1.losses}, KO:${selectedFight.fighter1.koWins})
-${selectedFight.fighter2.name} (${selectedFight.fighter2.wins}-${selectedFight.fighter2.losses}, KO:${selectedFight.fighter2.koWins})
-
-Quick analysis:
-1. Fighter advantage and why
-2. Fight outcome prediction (KO/Sub/Dec)
-3. Distance probability
-4. Best bet
-
-Keep response under 100 words.`,
-      stream: false,
-      options: {
-        temperature: 0.7,
-        top_p: 0.9
+      fighter1: {
+        ...selectedFight.fighter1,
+        wins: parseInt(selectedFight.fighter1.wins) || 0,
+        losses: parseInt(selectedFight.fighter1.losses) || 0,
+        koWins: parseInt(selectedFight.fighter1.koWins) || 0,
+        subWins: parseInt(selectedFight.fighter1.subWins) || 0,
+        decisionWins: parseInt(selectedFight.fighter1.decisionWins) || 0,
+        strikeAccuracy: parseFloat(selectedFight.fighter1.strikeAccuracy) || 0,
+      },
+      fighter2: {
+        ...selectedFight.fighter2,
+        wins: parseInt(selectedFight.fighter2.wins) || 0,
+        losses: parseInt(selectedFight.fighter2.losses) || 0,
+        koWins: parseInt(selectedFight.fighter2.koWins) || 0,
+        subWins: parseInt(selectedFight.fighter2.subWins) || 0,
+        decisionWins: parseInt(selectedFight.fighter2.decisionWins) || 0,
+        strikeAccuracy: parseFloat(selectedFight.fighter2.strikeAccuracy) || 0,
       }
     };
     
-    console.log("Sending request to:", `${API_URL}/api/generate`);
+    console.log("Sending request to:", `${API_URL}/api/predict`);
     console.log("Request data:", JSON.stringify(fighterData, null, 2));
     
     try {
-      const response = await fetch(`${API_URL}/api/generate`, {
+      const response = await fetch(`${API_URL}/api/predict`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -91,20 +90,8 @@ Keep response under 100 words.`,
       const data = await response.json();
       console.log("Received analysis:", data);
       
-      setPrediction({
-        message: data.response,
-        aiAnalysis: true,
-        fighter1Probability: 50,
-        fighter2Probability: 50,
-        simulationConfidence: 80,
-        fightOutcome: {
-          goesToDistance: "Unknown",
-          finishProbability: 0,
-          recommendedBet: "No recommendation",
-          confidence: 80
-        }
-      });
-      setOllamaResponse(data.response || 'No AI analysis available');
+      setPrediction(data);
+      setOllamaResponse(data.message || 'No AI analysis available');
       setIsInputMode(false);
     } catch (error) {
       console.error('Error submitting fighter data:', error);
