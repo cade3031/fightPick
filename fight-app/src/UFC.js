@@ -70,18 +70,21 @@ function UFC() {
     };
     
     console.log("Sending request to:", `${API_URL}/api/predict`);
-    console.log("Request data:", fighterData);
+    console.log("Request data:", JSON.stringify(fighterData, null, 2));
     
     try {
       const response = await fetch(`${API_URL}/api/predict`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Accept': 'application/json',
         },
         body: JSON.stringify(fighterData)
       });
 
       if (!response.ok) {
+        const errorText = await response.text();
+        console.error("Error response:", errorText);
         throw new Error(`HTTP error! status: ${response.status}`);
       }
 
