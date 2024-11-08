@@ -52,11 +52,15 @@ app.post('/api/test-predict', (req, res) => {
 // This is where we ask our server to predict a fight
 app.post("/api/predict", async (req, res) => {
   try {
-    console.log("=== START OF PREDICT REQUEST ===");
-    console.log("Request headers:", req.headers);
-    console.log("Raw body:", req.body);
+    console.log("\n=== START OF PREDICT REQUEST ===");
+    console.log("⏰ Time:", new Date().toISOString());
+    console.log("📊 Processing request for fighters:", {
+      fighter1: req.body?.fighter1?.name,
+      fighter2: req.body?.fighter2?.name
+    });
 
     if (!req.body || !req.body.fighter1 || !req.body.fighter2) {
+      console.log("❌ Missing fighter data");
       return res.status(400).json({
         error: 'Missing fighter data',
         receivedBody: req.body
@@ -64,26 +68,29 @@ app.post("/api/predict", async (req, res) => {
     }
 
     const { fighter1, fighter2 } = req.body;
-    console.log("Processing fighters:", { fighter1, fighter2 });
+    console.log("✅ Fighter data validated");
 
-    // Test Ollama connection first
+    // Test Ollama connection
+    console.log("🔄 Testing Ollama connection...");
     try {
       const testResponse = await axios.post(`${OLLAMA_URL}/api/generate`, {
         model: "llama2",
         prompt: "test",
         stream: false
       });
-      console.log("Ollama test successful");
+      console.log("✅ Ollama connection test successful");
     } catch (error) {
-      console.error("Ollama test failed:", error.message);
+      console.error("❌ Ollama connection test failed:", error.message);
       throw new Error(`Ollama connection failed: ${error.message}`);
     }
 
+    console.log("🤖 Starting AI analysis...");
     const aiAnalysis = await getOllamaAnalysis(fighter1, fighter2);
-    console.log("AI analysis completed:", aiAnalysis);
+    console.log("✅ AI analysis completed");
 
+    console.log("🎲 Starting outcome prediction...");
     const outcomeAnalysis = predictFightOutcome(fighter1, fighter2);
-    console.log("Outcome prediction completed:", outcomeAnalysis);
+    console.log("✅ Outcome prediction completed");
 
     const response = {
       message: aiAnalysis,
@@ -95,17 +102,15 @@ app.post("/api/predict", async (req, res) => {
       fightOutcome: outcomeAnalysis.prediction
     };
 
-    console.log("Sending response:", response);
+    console.log("📤 Sending response back to client");
+    console.log("=== END OF PREDICT REQUEST ===\n");
     res.json(response);
 
   } catch (error) {
-    console.error('=== ERROR IN PREDICT REQUEST ===');
-    console.error('Error details:', error);
-    console.error('Stack trace:', error.stack);
+    console.error('❌ ERROR IN PREDICT REQUEST:', error);
     res.status(500).json({
       error: 'Failed to analyze fight',
-      details: error.message,
-      stack: error.stack
+      details: error.message
     });
   }
 });
