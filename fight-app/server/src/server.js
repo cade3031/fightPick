@@ -30,7 +30,7 @@ app.use((req, res, next) => {
 
 // This is a simple test to see if our server is awake
 app.get('/', (req, res) => {
-  res.json({ message: 'Server is running' }); // This sends back a message saying "I'm awake!"
+  res.json({ message: 'Server is running' }); // Thi`s sends back a message saying "I'm awake!"
 });
 
 // Another test to see if our server is working
@@ -175,68 +175,51 @@ const getOllamaAnalysis = async (fighter1, fighter2) => {
     console.log("Connecting to Ollama at:", OLLAMA_URL);
     console.log("Fighter data:", { fighter1, fighter2 });
 
-    let retries = 3;
+    let retries = 5;  // Increased retries
     while (retries > 0) {
       try {
-        console.log(`Attempt ${4 - retries}: Sending request to Ollama`);
+        console.log(`Attempt ${6 - retries}: Sending request to Ollama`);
         const response = await axios.post(`${OLLAMA_URL}/api/generate`, {
           model: "llama2",
-          prompt: `As an expert UFC analyst, provide a detailed breakdown of this fight:
+          prompt: `Expert UFC fight analysis for ${fighter1.name} vs ${fighter2.name}:
 
-${fighter1.name} vs ${fighter2.name}
+Stats:
+${fighter1.name} (${fighter1.wins}-${fighter1.losses}, KO:${fighter1.koWins}, Sub:${fighter1.subWins}, Dec:${fighter1.decisionWins})
+${fighter2.name} (${fighter2.wins}-${fighter2.losses}, KO:${fighter2.koWins}, Sub:${fighter2.subWins}, Dec:${fighter2.decisionWins})
 
-Fighter Stats:
-${fighter1.name}:
-- Record: ${fighter1.wins}-${fighter1.losses}
-- KO Wins: ${fighter1.koWins}
-- Submission Wins: ${fighter1.subWins}
-- Decision Wins: ${fighter1.decisionWins}
-- Strike Accuracy: ${fighter1.strikeAccuracy}%
+Quick analysis:
+1. Fighter advantage and why
+2. Fight outcome prediction (KO/Sub/Dec)
+3. Distance probability
+4. Best bet
 
-${fighter2.name}:
-- Record: ${fighter2.wins}-${fighter2.losses}
-- KO Wins: ${fighter2.koWins}
-- Submission Wins: ${fighter2.subWins}
-- Decision Wins: ${fighter2.decisionWins}
-- Strike Accuracy: ${fighter2.strikeAccuracy}%
-
-Provide analysis covering:
-1. Which fighter has the advantage and specifically why (consider striking, grappling, and experience)
-2. Predicted fight outcome with confidence level (KO, Submission, or Decision)
-3. Probability of fight going to distance based on finishing rates
-4. Most likely method of victory and why
-5. Betting recommendation with reasoning
-
-Keep analysis focused and under 200 words.`,
+Keep response under 100 words.`,
           stream: false,
           options: {
             temperature: 0.7,
             top_p: 0.9
           }
         }, {
-          timeout: 300000  // Increased to 5 minutes
+          timeout: 600000  // Increased to 10 minutes
         });
 
         if (response.data && response.data.response) {
-          console.log("Successfully received Ollama response");
+          console.log("✅ Successfully received Ollama response");
           return response.data.response;
         } else {
-          console.error("Invalid response format from Ollama:", response.data);
-          return "AI analysis unavailable - invalid response format";
+          throw new Error("Invalid response format from Ollama");
         }
       } catch (error) {
-        console.error(`Attempt ${4 - retries} failed:`, error.message);
-        console.error('Full error:', error);
+        console.error(`❌ Attempt ${6 - retries} failed:`, error.message);
         retries--;
         if (retries === 0) throw error;
-        console.log(`Waiting 10 seconds before retry...`);
-        await new Promise(resolve => setTimeout(resolve, 10000)); // Increased wait time
+        console.log(`⏳ Waiting 20 seconds before retry...`);
+        await new Promise(resolve => setTimeout(resolve, 20000));  // Increased wait time
       }
     }
   } catch (error) {
     console.error('=== ERROR IN OLLAMA ANALYSIS ===');
     console.error('Error details:', error.message);
-    console.error('Stack trace:', error.stack);
     return `AI analysis unavailable - ${error.message}`;
   }
 };
