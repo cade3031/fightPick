@@ -150,6 +150,11 @@ Keep response under 100 words.`,
   const handleFightClick = (event, competitors) => {
     console.log("handleFightClick called with:", { event, competitors });
 
+    if (!event || !competitors || competitors.length < 2) {
+      console.error('Invalid event or competitors data');
+      return;
+    }
+
     const markets = event.displayGroups?.[0]?.markets;
     if (!markets || !markets[0]?.outcomes) {
       console.error('Missing markets data:', { markets });
@@ -157,35 +162,37 @@ Keep response under 100 words.`,
     }
 
     const fighter1 = {
-      name: competitors[0].name,
+      name: competitors[0]?.name || 'Unknown Fighter 1',
       odds: markets[0].outcomes[0]?.price?.american || 'N/A',
       age: '',
       height: '',
       reach: '',
       worldRanking: '',
-      wins: '',
-      losses: '',
-      koWins: '',
-      subWins: '',
-      strikeAccuracy: '',
+      wins: '0',
+      losses: '0',
+      koWins: '0',
+      subWins: '0',
+      strikeAccuracy: '0',
       takedownAccuracy: '',
-      takedownDefense: ''
+      takedownDefense: '',
+      decisionWins: '0'
     };
     
     const fighter2 = {
-      name: competitors[1].name,
+      name: competitors[1]?.name || 'Unknown Fighter 2',
       odds: markets[0].outcomes[1]?.price?.american || 'N/A',
       age: '',
       height: '',
       reach: '',
       worldRanking: '',
-      wins: '',
-      losses: '',
-      koWins: '',
-      subWins: '',
-      strikeAccuracy: '',
+      wins: '0',
+      losses: '0',
+      koWins: '0',
+      subWins: '0',
+      strikeAccuracy: '0',
       takedownAccuracy: '',
-      takedownDefense: ''
+      takedownDefense: '',
+      decisionWins: '0'
     };
     
     console.log('Setting fighter data:', { fighter1, fighter2 });
@@ -303,378 +310,374 @@ Keep response under 100 words.`,
         UFC Fight Card
       </div>
       {fightCardData ? (
-        fightCardData[0]?.events?.map((event, index) => (
-         
-          <div 
-            className={`fight-card ${analyzedFights.has(`${event.competitors[0].name}-${event.competitors[1].name}`)? 'analyzed' : ''}`}
-            key={index}
-            onClick={() => handleFightClick(event, event.competitors)} 
-          >
-                
-            {event.competitors.map((competitor, i) => (
-              <div className="fighter-container" key={i}>
-                <div className="fighter-info">
-                  <div className="fighter-name">{competitor.name}</div>
-                  <div className="opponent">
-                    vs. {event.competitors[1 - i].name}
-                  </div>
-                  <div className="odds">
-                    {event.displayGroups?.[0]?.markets?.[0]?.outcomes?.[i]?.price?.american || 'N/A'}
-                  </div>
-                </div>
-                <div className="fight-details">
-                  <div className="time">
-                    {new Date(event.startTime).toLocaleString()}
-                  </div>
-                  <div className="rounds">
-                    {event.displayGroups[0].markets[1]?.outcomes.map((outcome, j) => (
-                      <span 
-                        key={j} 
-                        className={outcome.type === 'O' ? 'over' : 'under'}
-                      >
-                        {outcome.description} {outcome.price.american}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            ))}
-            {selectedFight && 
-             selectedFight.fighter1.name === event.competitors[0].name && 
-             prediction && (
-              <div className="prediction-container">
-                <button onClick={() => setPrediction(null)}
-                className="close-prediction"
-              > 
-                x
-              </button>
-                <h3>Fight Analysis</h3>
-                {prediction.aiAnalysis ? (
-                  <>
-                    <div className="ai-analysis"> 
-                      <h4>AI Analysis</h4>
-                      <p>{prediction.message}</p>
-                    </div>
-                    
+        fightCardData[0]?.events?.map((event, index) => {
+          if (!event || !event.competitors || event.competitors.length < 2) {
+            return null;
+          }
 
-                    <div className="simulation-results">
-                      <h4>Monte Carlo Simulation Results</h4>
-                      <div className="prediction-details">
-                        <div className="fighter-prediction">
-                          <strong>{selectedFight.fighter1.name}</strong>
-                          <p>Win Probability: {prediction.fighter1Probability}%</p>
-                          <div className="betting-metrics">
-                            <p>Kelly Criterion: {prediction.bettingAdvice.fighter1.kellyBet}%</p>
-                            <p>Expected Value: {prediction.bettingAdvice.fighter1.expectedValue}</p>
-                          </div>
-                        </div>
-                        <div className="fighter-prediction">
-                          <strong>{selectedFight.fighter2.name}</strong>
-                          <p>Win Probability: {prediction.fighter2Probability}%</p>
-                          <div className="betting-metrics">
-                            <p>Kelly Criterion: {prediction.bettingAdvice.fighter2.kellyBet}%</p>
-                            <p>Expected Value: {prediction.bettingAdvice.fighter2.expectedValue}</p>
-                          </div>
-                        </div>
-                      </div>
-                      <div className="safe-bet-analysis"> 
-                        <h4>Fight Outcome Analysis</h4>
-                        <p>Safe Bet: {prediction.fightOutcome?.recommendedBet}</p>
-                         
-                        <p>Distance Probability: {prediction.fightOutcome?.goesToDistance} ({(100 - prediction.fightOutcome?.finishProbability).toFixed(1)}%)</p>  
-                        {/* distance probability pulling from server */}
-                        <p>Finish Probability: {prediction.fightOutcome?.finishProbability.toFixed(1)}%</p> 
-                        {prediction.fightOutcome?.likelyMethod && (
-                       <p>Most Likely Method: {prediction.fightOutcome.likelyMethod} ({prediction.fightOutcome.confidence}% confidence)</p> 
-                        )}
-                      </div>
-                      <div className="simulation-confidence">
-                        <p>Simulation Confidence: {prediction.simulationConfidence}%</p>
-                      </div>
-                    </div>
-                    <div className="betting-advice">
-                      <h4>Betting Recommendation</h4>
-                      <div className="suggested-bet">
-                        <p>Suggested Bet: {prediction.suggestedBet}</p>
-                        <p className="bet-size">
-                          Recommended Size: {
-                            prediction.bettingAdvice[prediction.suggestedBet.toLowerCase().includes(selectedFight.fighter1.name.toLowerCase()) 
-                              ? 'fighter1' 
-                              : 'fighter2'
-                            ].kellyBet
-                          }% of bankroll
-                        </p>
-                      </div>
-                    </div>
-                  </>
-                ) : (
-                  <p>Using basic odds-based prediction (AI analysis unavailable)</p>
-                )}
-                {isSimulating && (
-                  <div className="simulation-progress">
-                    <div className="progress-bar">
-                      <div 
-                        className="progress-fill" 
-                        style={{ width: `${simulationProgress}%` }}
-                      ></div>
-                    </div>
-                    <p>Running simulations: {simulationProgress}%</p>
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
-        ))
-      ) : (
-        <p>Loading fight card data...</p>
-      )}
-      {showPopup && (
-        <div className="popup-overlay">
-          <div className="popup-content">
-            <button 
-              className="popup-close-button"
-              onClick={() => setShowPopup(false)}
+          return (
+            <div 
+              className={`fight-card ${analyzedFights.has(`${event.competitors[0].name}-${event.competitors[1].name}`)? 'analyzed' : ''}`}
+              key={index}
+              onClick={() => handleFightClick(event, event.competitors)} 
             >
-              ×
-            </button>
-            {isInputMode ? ( 
-              <>
-                <h3>Enter Fighter Data</h3>
-                <form onSubmit={handleSubmitFighterData}>
-                  <div className="fighters-comparison">
-                    <div className="fighter-form">
-                      <h4>{selectedFight.fighter1.name}</h4>
-                      <div className="form-group">
-                        <label>Age:</label>
-                        <input 
-                          type="text" 
-                          value={selectedFight.fighter1.age}
-                          onChange={(e) => handleInputChange(e, 'fighter1', 'age')}
-                        />
-                      </div>
-                      <div className="form-group">
-                        <label>Height:</label>
-                        <input 
-                          type="text" 
-                          value={selectedFight.fighter1.height}
-                          onChange={(e) => handleInputChange(e, 'fighter1', 'height')}
-                        />
-                      </div>
-                      <div className="form-group">
-                        <label>Weight:</label>
-                        <input 
-                          type="number" 
-                          value={selectedFight.fighter1.weight}
-                          onChange={(e) => handleInputChange(e, 'fighter1', 'weight')}
-                        />
-                      </div>
-                      <div className="form-group">
-                        <label>Reach:</label>
-                        <input 
-                          type="text" 
-                          value={selectedFight.fighter1.reach}
-                          onChange={(e) => handleInputChange(e, 'fighter1', 'reach')}
-                        />
-                      </div>
-                      <div className="form-group">
-                        <label>World Ranking:</label>
-                        <input 
-                          type="number" 
-                          value={selectedFight.fighter1.worldRanking}
-                          onChange={(e) => handleInputChange(e, 'fighter1', 'worldRanking')}
-                        />
-                      </div>
-                      <div className="form-group">
-                        <label>Wins:</label>
-                        <input 
-                          type="number" 
-                          value={selectedFight.fighter1.wins}
-                          onChange={(e) => handleInputChange(e, 'fighter1', 'wins')}
-                        />
-                      </div>
-                      <div className="form-group">
-                        <label>Losses:</label>
-                        <input 
-                          type="number" 
-                          value={selectedFight.fighter1.losses}
-                          onChange={(e) => handleInputChange(e, 'fighter1', 'losses')}
-                        />
-                      </div>
-                      <div className="form-group">
-                        <label>KO Wins:</label>
-                        <input 
-                          type="number" 
-                          value={selectedFight.fighter1.koWins}
-                          onChange={(e) => handleInputChange(e, 'fighter1', 'koWins')}
-                        />
-                      </div>
-                      <div className="form-group">
-                        <label>Sub Wins:</label>
-                        <input 
-                          type="number" 
-                          value={selectedFight.fighter1.subWins}
-                          onChange={(e) => handleInputChange(e, 'fighter1', 'subWins')}
-                        />
-                      </div>
-                      <div className="form-group">
-                        <label>Decision Wins:</label>
-                        <input 
-                          type="number" 
-                          value={selectedFight.fighter1.decisionWins}
-                          onChange={(e) => handleInputChange(e, 'fighter1', 'decisionWins')}
-                        />
-                      </div>
-                      <div className="form-group">
-                        <label>Strike Accuracy:</label>
-                        <input 
-                          type="text" 
-                          value={selectedFight.fighter1.strikeAccuracy}
-                          onChange={(e) => handleInputChange(e, 'fighter1', 'strikeAccuracy')}
-                        />
-                      </div>
-                      <div className="form-group">
-                        <label>Takedown Accuracy:</label>
-                        <input 
-                          type="text" 
-                          value={selectedFight.fighter1.takedownAccuracy}
-                          onChange={(e) => handleInputChange(e, 'fighter1', 'takedownAccuracy')}
-                        />
-                      </div>
-                      <div className="form-group">
-                        <label>Takedown Defense:</label>
-                        <input 
-                          type="text" 
-                          value={selectedFight.fighter1.takedownDefense}
-                          onChange={(e) => handleInputChange(e, 'fighter1', 'takedownDefense')}
-                        />
-                      </div>
+              {event.competitors.map((competitor, i) => (
+                <div className="fighter-container" key={i}>
+                  <div className="fighter-info">
+                    <div className="fighter-name">{competitor.name}</div>
+                    <div className="opponent">
+                      vs. {event.competitors[1 - i].name}
                     </div>
-
-                    <div className="fighter-form">
-                      <h4>{selectedFight.fighter2.name}</h4>
-                      <div className="form-group">
-                        <label>Age:</label>
-                        <input 
-                          type="text" 
-                          value={selectedFight.fighter2.age}
-                          onChange={(e) => handleInputChange(e, 'fighter2', 'age')}
-                        />
-                      </div>
-                      <div className="form-group">
-                        <label>Height:</label>
-                        <input 
-                          type="text" 
-                          value={selectedFight.fighter2.height}
-                          onChange={(e) => handleInputChange(e, 'fighter2', 'height')}
-                        />
-                      </div>
-                      <div className="form-group">
-                        <label>Weight:</label>
-                        <input 
-                          type="number" 
-                          value={selectedFight.fighter2.weight}
-                          onChange={(e) => handleInputChange(e, 'fighter2', 'weight')}
-                        />
-                      </div>
-                      <div className="form-group">
-                        <label>Reach:</label>
-                        <input 
-                          type="text" 
-                          value={selectedFight.fighter2.reach}
-                          onChange={(e) => handleInputChange(e, 'fighter2', 'reach')}
-                        />
-                      </div>
-                      <div className="form-group">
-                        <label>World Ranking:</label>
-                        <input 
-                          type="number" 
-                          value={selectedFight.fighter2.worldRanking}
-                          onChange={(e) => handleInputChange(e, 'fighter2', 'worldRanking')}
-                        />
-                      </div>
-                      <div className="form-group">
-                        <label>Wins:</label>
-                        <input 
-                          type="number" 
-                          value={selectedFight.fighter2.wins}
-                          onChange={(e) => handleInputChange(e, 'fighter2', 'wins')}
-                        />
-                      </div>
-                      <div className="form-group">
-                        <label>Losses:</label>
-                        <input 
-                          type="number" 
-                          value={selectedFight.fighter2.losses}
-                          onChange={(e) => handleInputChange(e, 'fighter2', 'losses')}
-                        />
-                      </div>
-                      <div className="form-group">
-                        <label>KO Wins:</label>
-                        <input 
-                          type="number" 
-                          value={selectedFight.fighter2.koWins}
-                          onChange={(e) => handleInputChange(e, 'fighter2', 'koWins')}
-                        />
-                      </div>
-                      <div className="form-group">
-                        <label>Sub Wins:</label>
-                        <input 
-                          type="number" 
-                          value={selectedFight.fighter2.subWins}
-                          onChange={(e) => handleInputChange(e, 'fighter2', 'subWins')}
-                        />
-                      </div>
-                      <div className="form-group">
-                        <label>Decision Wins:</label>
-                        <input 
-                          type="number" 
-                          value={selectedFight.fighter2.decisionWins}
-                          onChange={(e) => handleInputChange(e, 'fighter2', 'decisionWins')}
-                        />
-                      </div>
-                      <div className="form-group">
-                        <label>Strike Accuracy:</label>
-                        <input 
-                          type="text" 
-                          value={selectedFight.fighter2.strikeAccuracy}
-                          onChange={(e) => handleInputChange(e, 'fighter2', 'strikeAccuracy')}
-                        />
-                      </div>
-                      <div className="form-group">
-                        <label>Takedown Accuracy:</label>
-                        <input  
-                          type="text" 
-                          value={selectedFight.fighter2.takedownAccuracy}
-                          onChange={(e) => handleInputChange(e, 'fighter2', 'takedownAccuracy')}
-                        />
-                      </div>
-                      <div className="form-group">
-                        <label>Takedown Defense:</label>
-                        <input  
-                          type="text" 
-                          value={selectedFight.fighter2.takedownDefense}
-                          onChange={(e) => handleInputChange(e, 'fighter2', 'takedownDefense')}
-                        />  
-                      </div>
+                    <div className="odds">
+                      {event.displayGroups?.[0]?.markets?.[0]?.outcomes?.[i]?.price?.american || 'N/A'}
                     </div>
                   </div>
-                  <button type="submit" className="submit-fighter-data">
-                    Analyze Fight
-                  </button>
-                </form>
-              </>
-            ) : (
-                <>
-                    <h3>Ollama Analysis</h3>
-                   <div className="ollama-response">
-                    {ollamaResponse}
+                  <div className="fight-details">
+                    <div className="time">
+                      {new Date(event.startTime).toLocaleString()}
+                    </div>
+                    <div className="rounds">
+                      {event.displayGroups[0].markets[1]?.outcomes.map((outcome, j) => (
+                        <span 
+                          key={j} 
+                          className={outcome.type === 'O' ? 'over' : 'under'}
+                        >
+                          {outcome.description} {outcome.price.american}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
                 </div>
-                <button className="close-popup" onClick={() => setShowPopup(false)}>
-                  Close
+              ))}
+              {selectedFight && 
+               selectedFight.fighter1.name === event.competitors[0].name && 
+               prediction && (
+                <div className="prediction-container">
+                  <button onClick={() => setPrediction(null)}
+                  className="close-prediction"
+                > 
+                  x
                 </button>
-              </>
-            )}
-          </div>
+                  <h3>Fight Analysis</h3>
+                  {prediction.aiAnalysis ? (
+                    <>
+                      <div className="ai-analysis"> 
+                        <h4>AI Analysis</h4>
+                        <p>{prediction.message}</p>
+                      </div>
+                      
+
+                      <div className="simulation-results">
+                        <h4>Monte Carlo Simulation Results</h4>
+                        <div className="prediction-details">
+                          <div className="fighter-prediction">
+                            <strong>{selectedFight.fighter1.name}</strong>
+                            <p>Win Probability: {prediction.fighter1Probability}%</p>
+                            <div className="betting-metrics">
+                              <p>Kelly Criterion: {prediction.bettingAdvice.fighter1.kellyBet}%</p>
+                              <p>Expected Value: {prediction.bettingAdvice.fighter1.expectedValue}</p>
+                            </div>
+                          </div>
+                          <div className="fighter-prediction">
+                            <strong>{selectedFight.fighter2.name}</strong>
+                            <p>Win Probability: {prediction.fighter2Probability}%</p>
+                            <div className="betting-metrics">
+                              <p>Kelly Criterion: {prediction.bettingAdvice.fighter2.kellyBet}%</p>
+                              <p>Expected Value: {prediction.bettingAdvice.fighter2.expectedValue}</p>
+                            </div>
+                          </div>
+                        </div>
+                        <div className="safe-bet-analysis"> 
+                          <h4>Fight Outcome Analysis</h4>
+                          <p>Safe Bet: {prediction.fightOutcome?.recommendedBet}</p>
+                           
+                          <p>Distance Probability: {prediction.fightOutcome?.goesToDistance} ({(100 - prediction.fightOutcome?.finishProbability).toFixed(1)}%)</p>  
+                          {/* distance probability pulling from server */}
+                          <p>Finish Probability: {prediction.fightOutcome?.finishProbability.toFixed(1)}%</p> 
+                          {prediction.fightOutcome?.likelyMethod && (
+                         <p>Most Likely Method: {prediction.fightOutcome.likelyMethod} ({prediction.fightOutcome.confidence}% confidence)</p> 
+                          )}
+                        </div>
+                        <div className="simulation-confidence">
+                          <p>Simulation Confidence: {prediction.simulationConfidence}%</p>
+                        </div>
+                      </div>
+                      <div className="betting-advice">
+                        <h4>Betting Recommendation</h4>
+                        <div className="suggested-bet">
+                          <p>Suggested Bet: {prediction.suggestedBet}</p>
+                          <p className="bet-size">
+                            Recommended Size: {
+                              prediction.bettingAdvice[prediction.suggestedBet.toLowerCase().includes(selectedFight.fighter1.name.toLowerCase()) 
+                                ? 'fighter1' 
+                                : 'fighter2'
+                              ].kellyBet
+                            }% of bankroll
+                          </p>
+                        </div>
+                      </div>
+                    </>
+                  ) : (
+                    <p>Using basic odds-based prediction (AI analysis unavailable)</p>
+                  )}
+                  {isSimulating && (
+                    <div className="simulation-progress">
+                      <div className="progress-bar">
+                        <div 
+                          className="progress-fill" 
+                          style={{ width: `${simulationProgress}%` }}
+                        ></div>
+                      </div>
+                      <p>Running simulations: {simulationProgress}%</p>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          );
+        })
+      ) : (
+        <div>Loading fight card data...</div>
+      )}
+      {showPopup && selectedFight && (
+        <div className="popup">
+          {isInputMode ? ( 
+            <>
+              <h3>Enter Fighter Data</h3>
+              <form onSubmit={handleSubmitFighterData}>
+                <div className="fighters-comparison">
+                  <div className="fighter-form">
+                    <h4>{selectedFight.fighter1.name}</h4>
+                    <div className="form-group">
+                      <label>Age:</label>
+                      <input 
+                        type="text" 
+                        value={selectedFight.fighter1.age}
+                        onChange={(e) => handleInputChange(e, 'fighter1', 'age')}
+                      />
+                    </div>
+                    <div className="form-group">
+                      <label>Height:</label>
+                      <input 
+                        type="text" 
+                        value={selectedFight.fighter1.height}
+                        onChange={(e) => handleInputChange(e, 'fighter1', 'height')}
+                      />
+                    </div>
+                    <div className="form-group">
+                      <label>Weight:</label>
+                      <input 
+                        type="number" 
+                        value={selectedFight.fighter1.weight}
+                        onChange={(e) => handleInputChange(e, 'fighter1', 'weight')}
+                      />
+                    </div>
+                    <div className="form-group">
+                      <label>Reach:</label>
+                      <input 
+                        type="text" 
+                        value={selectedFight.fighter1.reach}
+                        onChange={(e) => handleInputChange(e, 'fighter1', 'reach')}
+                      />
+                    </div>
+                    <div className="form-group">
+                      <label>World Ranking:</label>
+                      <input 
+                        type="number" 
+                        value={selectedFight.fighter1.worldRanking}
+                        onChange={(e) => handleInputChange(e, 'fighter1', 'worldRanking')}
+                      />
+                    </div>
+                    <div className="form-group">
+                      <label>Wins:</label>
+                      <input 
+                        type="number" 
+                        value={selectedFight.fighter1.wins}
+                        onChange={(e) => handleInputChange(e, 'fighter1', 'wins')}
+                      />
+                    </div>
+                    <div className="form-group">
+                      <label>Losses:</label>
+                      <input 
+                        type="number" 
+                        value={selectedFight.fighter1.losses}
+                        onChange={(e) => handleInputChange(e, 'fighter1', 'losses')}
+                      />
+                    </div>
+                    <div className="form-group">
+                      <label>KO Wins:</label>
+                      <input 
+                        type="number" 
+                        value={selectedFight.fighter1.koWins}
+                        onChange={(e) => handleInputChange(e, 'fighter1', 'koWins')}
+                      />
+                    </div>
+                    <div className="form-group">
+                      <label>Sub Wins:</label>
+                      <input 
+                        type="number" 
+                        value={selectedFight.fighter1.subWins}
+                        onChange={(e) => handleInputChange(e, 'fighter1', 'subWins')}
+                      />
+                    </div>
+                    <div className="form-group">
+                      <label>Decision Wins:</label>
+                      <input 
+                        type="number" 
+                        value={selectedFight.fighter1.decisionWins}
+                        onChange={(e) => handleInputChange(e, 'fighter1', 'decisionWins')}
+                      />
+                    </div>
+                    <div className="form-group">
+                      <label>Strike Accuracy:</label>
+                      <input 
+                        type="text" 
+                        value={selectedFight.fighter1.strikeAccuracy}
+                        onChange={(e) => handleInputChange(e, 'fighter1', 'strikeAccuracy')}
+                      />
+                    </div>
+                    <div className="form-group">
+                      <label>Takedown Accuracy:</label>
+                      <input 
+                        type="text" 
+                        value={selectedFight.fighter1.takedownAccuracy}
+                        onChange={(e) => handleInputChange(e, 'fighter1', 'takedownAccuracy')}
+                      />
+                    </div>
+                    <div className="form-group">
+                      <label>Takedown Defense:</label>
+                      <input 
+                        type="text" 
+                        value={selectedFight.fighter1.takedownDefense}
+                        onChange={(e) => handleInputChange(e, 'fighter1', 'takedownDefense')}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="fighter-form">
+                    <h4>{selectedFight.fighter2.name}</h4>
+                    <div className="form-group">
+                      <label>Age:</label>
+                      <input 
+                        type="text" 
+                        value={selectedFight.fighter2.age}
+                        onChange={(e) => handleInputChange(e, 'fighter2', 'age')}
+                      />
+                    </div>
+                    <div className="form-group">
+                      <label>Height:</label>
+                      <input 
+                        type="text" 
+                        value={selectedFight.fighter2.height}
+                        onChange={(e) => handleInputChange(e, 'fighter2', 'height')}
+                      />
+                    </div>
+                    <div className="form-group">
+                      <label>Weight:</label>
+                      <input 
+                        type="number" 
+                        value={selectedFight.fighter2.weight}
+                        onChange={(e) => handleInputChange(e, 'fighter2', 'weight')}
+                      />
+                    </div>
+                    <div className="form-group">
+                      <label>Reach:</label>
+                      <input 
+                        type="text" 
+                        value={selectedFight.fighter2.reach}
+                        onChange={(e) => handleInputChange(e, 'fighter2', 'reach')}
+                      />
+                    </div>
+                    <div className="form-group">
+                      <label>World Ranking:</label>
+                      <input 
+                        type="number" 
+                        value={selectedFight.fighter2.worldRanking}
+                        onChange={(e) => handleInputChange(e, 'fighter2', 'worldRanking')}
+                      />
+                    </div>
+                    <div className="form-group">
+                      <label>Wins:</label>
+                      <input 
+                        type="number" 
+                        value={selectedFight.fighter2.wins}
+                        onChange={(e) => handleInputChange(e, 'fighter2', 'wins')}
+                      />
+                    </div>
+                    <div className="form-group">
+                      <label>Losses:</label>
+                      <input 
+                        type="number" 
+                        value={selectedFight.fighter2.losses}
+                        onChange={(e) => handleInputChange(e, 'fighter2', 'losses')}
+                      />
+                    </div>
+                    <div className="form-group">
+                      <label>KO Wins:</label>
+                      <input 
+                        type="number" 
+                        value={selectedFight.fighter2.koWins}
+                        onChange={(e) => handleInputChange(e, 'fighter2', 'koWins')}
+                      />
+                    </div>
+                    <div className="form-group">
+                      <label>Sub Wins:</label>
+                      <input 
+                        type="number" 
+                        value={selectedFight.fighter2.subWins}
+                        onChange={(e) => handleInputChange(e, 'fighter2', 'subWins')}
+                      />
+                    </div>
+                    <div className="form-group">
+                      <label>Decision Wins:</label>
+                      <input 
+                        type="number" 
+                        value={selectedFight.fighter2.decisionWins}
+                        onChange={(e) => handleInputChange(e, 'fighter2', 'decisionWins')}
+                      />
+                    </div>
+                    <div className="form-group">
+                      <label>Strike Accuracy:</label>
+                      <input 
+                        type="text" 
+                        value={selectedFight.fighter2.strikeAccuracy}
+                        onChange={(e) => handleInputChange(e, 'fighter2', 'strikeAccuracy')}
+                      />
+                    </div>
+                    <div className="form-group">
+                      <label>Takedown Accuracy:</label>
+                      <input  
+                        type="text" 
+                        value={selectedFight.fighter2.takedownAccuracy}
+                        onChange={(e) => handleInputChange(e, 'fighter2', 'takedownAccuracy')}
+                      />
+                    </div>
+                    <div className="form-group">
+                      <label>Takedown Defense:</label>
+                      <input  
+                        type="text" 
+                        value={selectedFight.fighter2.takedownDefense}
+                        onChange={(e) => handleInputChange(e, 'fighter2', 'takedownDefense')}
+                      />  
+                    </div>
+                  </div>
+                </div>
+                <button type="submit" className="submit-fighter-data">
+                  Analyze Fight
+                </button>
+              </form>
+            </>
+          ) : (
+              <>
+                  <h3>Ollama Analysis</h3>
+                 <div className="ollama-response">
+                  {ollamaResponse}
+              </div>
+              <button className="close-popup" onClick={() => setShowPopup(false)}>
+                Close
+              </button>
+            </>
+          )}
         </div>
       )}
       <div className="parlay-container">
