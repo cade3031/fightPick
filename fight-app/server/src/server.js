@@ -176,8 +176,15 @@ const getOllamaAnalysis = async (fighter1, fighter2) => {
     console.log("Connecting to Ollama at:", OLLAMA_URL);
     console.log("Fighter data:", { fighter1, fighter2 });
 
-    // Create the prompt
-    const prompt = `Expert UFC fight analysis for ${fighter1.name} vs ${fighter2.name}:
+    // Try using node-fetch
+    const response = await fetch(`${OLLAMA_URL}/api/generate`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: "llama2",
+        prompt: `Expert UFC fight analysis for ${fighter1.name} vs ${fighter2.name}:
 
 Stats:
 ${fighter1.name} (${fighter1.wins}-${fighter1.losses}, KO:${fighter1.koWins})
@@ -189,35 +196,26 @@ Quick analysis:
 3. Distance probability
 4. Best bet
 
-Keep response under 100 words.`;
-
-    // Make the request with a longer timeout
-    const response = await axios({
-      method: 'post',
-      url: `${OLLAMA_URL}/api/generate`,
-      data: {
-        model: "llama2",
-        prompt: prompt,
+Keep response under 100 words.`,
         stream: false,
         options: {
           temperature: 0.7,
           top_p: 0.9
         }
-      },
-      headers: {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json'
-      },
-      timeout: 300000, // 5 minutes
-      maxContentLength: Infinity,
-      maxBodyLength: Infinity
+      })
     });
 
-    if (response.data && response.data.response) {
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    const data = await response.json();
+    
+    if (data && data.response) {
       console.log("✅ Successfully received Ollama response");
-      return response.data.response;
+      return data.response;
     } else {
-      console.error("Invalid response format:", response.data);
+      console.error("Invalid response format:", data);
       throw new Error("Invalid response format from Ollama");
     }
   } catch (error) {
@@ -226,9 +224,6 @@ Keep response under 100 words.`;
     if (error.response) {
       console.error('Response data:', error.response.data);
       console.error('Response status:', error.response.status);
-    }
-    if (error.request) {
-      console.error('Request details:', error.request);
     }
     return `AI analysis unavailable - ${error.message}`;
   }
