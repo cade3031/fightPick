@@ -30,6 +30,7 @@ function UFC() {
   const [selectedParlay, setSelectedParlay] = useState(null);
   const [seedData, setSeedData] = useState(null);
   const [isSimulating, setIsSimulating] = useState(false);
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
 
   const handleInputChange = (e, fighter, field) => {
     const { value } = e.target;
@@ -44,6 +45,7 @@ function UFC() {
 
   const handleSubmitFighterData = async (e) => {
     e.preventDefault();
+    setIsAnalyzing(true); // Start loading
     console.log("Form submitted with data:", selectedFight);
 
     const fighterData = {
@@ -92,6 +94,8 @@ function UFC() {
     } catch (error) {
       console.error('Error submitting fighter data:', error);
       alert('Error analyzing fight data: ' + error.message);
+    } finally {
+      setIsAnalyzing(false); // End loading regardless of outcome
     }
   };
 
@@ -772,6 +776,11 @@ function UFC() {
               </>
             )}
           </div>
+        </div>
+      )}
+      {isAnalyzing && (
+        <div className="loading-overlay">
+          <div className="loading-spinner">Analyzing fight...</div>
         </div>
       )}
     </div>
