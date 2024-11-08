@@ -7,7 +7,7 @@ const pool = require('./config/db'); // This helps us talk to our database
 // We create a new server
 const app = express();
 const PORT = process.env.PORT || 8080; // This is the door our server uses to talk to the internet
-const OLLAMA_URL = process.env.OLLAMA_URL || 'http://localhost:11434'; // This is where we find our AI friend
+const OLLAMA_URL = process.env.OLLAMA_URL || 'http://localhost:11434'; // Using your server's IP
 
 // These are helpers that make our server work better
 app.use(express.json()); // This helps our server understand messages in a special format called JSON
@@ -135,7 +135,7 @@ const getOllamaAnalysis = async (fighter1, fighter2) => {
       try {
         console.log(`Attempt ${4 - retries}: Sending request to Ollama`);
         const response = await axios.post(`${OLLAMA_URL}/api/generate`, {
-          model: "llama2:latest",
+          model: "llama2",
           prompt: `As an expert UFC analyst, provide a detailed breakdown of this fight:
 
 ${fighter1.name} vs ${fighter2.name}
@@ -169,7 +169,7 @@ Keep analysis focused and under 200 words.`,
             top_p: 0.9
           }
         }, {
-          timeout: 60000 // 60 second timeout
+          timeout: 120000
         });
 
         if (response.data && response.data.response) {
