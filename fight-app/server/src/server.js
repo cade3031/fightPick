@@ -9,6 +9,9 @@ const app = express();
 const PORT = process.env.PORT || 8080; // This is the door our server uses to talk to the internet
 const OLLAMA_URL = process.env.OLLAMA_URL || 'http://localhost:11434'; // Using your server's IP
 
+// Add this near the top of your server.js, after creating the app
+app.use(express.json());  // Add this line to parse JSON requests
+
 // These are helpers that make our server work better
 
 app.use(cors({
