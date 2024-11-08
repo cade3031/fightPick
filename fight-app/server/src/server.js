@@ -70,20 +70,32 @@ app.post("/api/predict", async (req, res) => {
     const { fighter1, fighter2 } = req.body;
     console.log("✅ Fighter data validated");
 
-    // Test Ollama connection
-    console.log("🔄 Testing Ollama connection...");
+    // Enhanced Ollama connection test
+    console.log("🔄 Testing Ollama connection at:", OLLAMA_URL);
     try {
       const testResponse = await axios.post(`${OLLAMA_URL}/api/generate`, {
         model: "llama2",
         prompt: "test",
         stream: false
+      }, {
+        timeout: 5000  // 5 second timeout for test
       });
-      console.log("✅ Ollama connection test successful");
+      console.log("✅ Ollama test response:", testResponse.data);
     } catch (error) {
-      console.error("❌ Ollama connection test failed:", error.message);
-      throw new Error(`Ollama connection failed: ${error.message}`);
+      console.error("❌ Ollama connection test failed");
+      console.error("Error type:", error.name);
+      console.error("Error message:", error.message);
+      console.error("Error code:", error.code);
+      if (error.response) {
+        console.error("Response status:", error.response.status);
+        console.error("Response data:", error.response.data);
+      }
+      
+      // Skip the test and continue with analysis
+      console.log("⚠️ Continuing despite connection test failure");
     }
 
+    // Continue with analysis regardless of test result
     console.log("🤖 Starting AI analysis...");
     const aiAnalysis = await getOllamaAnalysis(fighter1, fighter2);
     console.log("✅ AI analysis completed");
