@@ -175,15 +175,20 @@ const getOllamaAnalysis = async (fighter1, fighter2) => {
     console.log("Connecting to Ollama at:", OLLAMA_URL);
     console.log("Fighter data:", { fighter1, fighter2 });
 
-    let retries = 3;  // Reduced retries
+    let retries = 3;
     while (retries > 0) {
       try {
         console.log(`Attempt ${4 - retries}: Sending request to Ollama`);
         
-        // Send the analysis request with increased timeout
-        const response = await axios.post(`${OLLAMA_URL}/api/generate`, {
-          model: "llama2",
-          prompt: `Expert UFC fight analysis for ${fighter1.name} vs ${fighter2.name}:
+        // Try using fetch instead of axios
+        const response = await fetch(`${OLLAMA_URL}/api/generate`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            model: "llama2",
+            prompt: `Expert UFC fight analysis for ${fighter1.name} vs ${fighter2.name}:
 
 Stats:
 ${fighter1.name} (${fighter1.wins}-${fighter1.losses}, KO:${fighter1.koWins})
@@ -196,34 +201,33 @@ Quick analysis:
 4. Best bet
 
 Keep response under 100 words.`,
-          stream: false,
-          options: {
-            temperature: 0.7,
-            top_p: 0.9
-          }
-        }, {
-          timeout: 120000,  // Increased to 2 minutes
-          maxContentLength: Infinity,
-          maxBodyLength: Infinity
+            stream: false,
+            options: {
+              temperature: 0.7,
+              top_p: 0.9
+            }
+          })
         });
 
-        if (response.data && response.data.response) {
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const data = await response.json();
+        
+        if (data && data.response) {
           console.log("✅ Successfully received Ollama response");
-          return response.data.response;
+          return data.response;
         } else {
-          console.error("Invalid response format:", response.data);
+          console.error("Invalid response format:", data);
           throw new Error("Invalid response format from Ollama");
         }
       } catch (error) {
         console.error(`❌ Attempt ${4 - retries} failed:`, error.message);
-        if (error.response) {
-          console.error('Response data:', error.response.data);
-          console.error('Response status:', error.response.status);
-        }
         retries--;
         if (retries === 0) throw error;
         console.log(`⏳ Waiting 15 seconds before retry...`);
-        await new Promise(resolve => setTimeout(resolve, 15000));  // Increased wait time
+        await new Promise(resolve => setTimeout(resolve, 15000));
       }
     }
   } catch (error) {
